@@ -1,0 +1,12 @@
+namespace demo.builtins
+
+type Values:
+	flag boolean (1..1)
+	amount number(digits: 30, fractionalDigits: 5) (1..1)
+	count int (0..1)
+	label string(maxLength: 42) (0..1)
+	day date (1..1)
+	when zonedDateTime (0..1)
+	tag pattern (0..1)
+	clock time (0..1)
+	calc calculation (0..1)

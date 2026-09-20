@@ -1,0 +1,11 @@
+[package]
+name = "sigil-model"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Semantic model (Ecore-mirroring IR) for the Rune DSL"
+
+[dependencies]
+sigil-diag = { workspace = true }
+serde = { workspace = true }

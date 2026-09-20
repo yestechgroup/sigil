@@ -1,0 +1,11 @@
+namespace oracle.basic
+version "1.0.0"
+
+type Person: <"A natural person">
+	[metadata key]
+	personId string (1..1) <"identifier">
+	firstName string (0..1)
+	tags string (0..*)
+
+type Company extends Person:
+	override personId int (1..1)

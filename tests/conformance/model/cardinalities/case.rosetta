@@ -1,0 +1,9 @@
+namespace demo.card
+
+type Card:
+	required string (1..1)
+	optional string (0..1)
+	list string (0..*)
+	atLeastOne string (1..*)
+	bounded string (0..10)
+	strange string (2..5)

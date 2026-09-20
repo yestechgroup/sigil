@@ -1,0 +1,8 @@
+namespace oracle.anno
+
+type Deal:
+	[metadata id]
+	dealId string (1..1)
+	altId string (0..1)
+		[metadata scheme]
+	price number (0..1)

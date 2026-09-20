@@ -1,0 +1,19 @@
+namespace res.errors
+
+type LoopA extends LoopB:
+	x int (1..1)
+
+type LoopB extends LoopA:
+	y int (1..1)
+
+type Broken:
+	missing Unknown (1..1)
+		[notAnAnnotation]
+	dup string (0..1)
+		[metadata bogus]
+
+type Dup:
+	z int (1..1)
+
+type Dup:
+	z2 int (1..1)

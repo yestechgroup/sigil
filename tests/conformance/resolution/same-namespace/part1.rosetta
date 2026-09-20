@@ -1,0 +1,4 @@
+namespace res.split
+
+type One:
+	field int (1..1)

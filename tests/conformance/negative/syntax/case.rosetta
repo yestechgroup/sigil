@@ -1,0 +1,4 @@
+namespace neg.syntax
+
+type Broken:
+	x int (1..1

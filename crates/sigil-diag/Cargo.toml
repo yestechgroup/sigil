@@ -1,0 +1,10 @@
+[package]
+name = "sigil-diag"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Source spans and diagnostics for the sigil Rune DSL toolchain"
+
+[dependencies]
+serde = { workspace = true }

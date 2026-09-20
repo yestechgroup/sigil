@@ -1,0 +1,10 @@
+namespace demo.choice
+
+type Party:
+	[metadata key]
+	partyId string (1..1)
+
+choice NaturalOrLegal: <"Person or company">
+	[metadata reference]
+	Party <"reference to party">
+	Natural

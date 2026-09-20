@@ -1,0 +1,9 @@
+namespace demo.enums
+
+enum Currency: <"ISO currencies">
+	EUR <"Euro">
+	USD displayName "US Dollar"
+	GBP
+
+enum SubCurrency extends Currency:
+	JPY

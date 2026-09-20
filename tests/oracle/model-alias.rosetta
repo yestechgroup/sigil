@@ -1,0 +1,7 @@
+namespace oracle.aliased
+
+type Foo:
+	x int (1..1)
+
+type Bar extends Foo:
+	y string (0..1)

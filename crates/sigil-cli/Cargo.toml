@@ -1,0 +1,18 @@
+[package]
+name = "sigil-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Command-line interface for the sigil Rune DSL toolchain"
+
+[[bin]]
+name = "sigil"
+path = "src/main.rs"
+
+[dependencies]
+sigil-diag = { workspace = true }
+sigil-syntax = { workspace = true }
+sigil-model = { workspace = true }
+sigil-resolve = { workspace = true }
+serde_json = { workspace = true }

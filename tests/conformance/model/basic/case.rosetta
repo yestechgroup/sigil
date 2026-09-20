@@ -1,0 +1,7 @@
+namespace demo.basic
+version "1.0.0"
+
+type Person: <"A natural person">
+	firstName string (1..1) <"Given name">
+	lastName string (1..1)
+	age int (0..1)

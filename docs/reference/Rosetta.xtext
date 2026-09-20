@@ -1,0 +1,767 @@
+grammar com.regnosys.rosetta.Rosetta with org.eclipse.xtext.common.Terminals
+import "http://www.rosetta-model.com/Rosetta"
+import "http://www.rosetta-model.com/RosettaSimple"
+import "http://www.rosetta-model.com/RosettaExpression"
+import "http://www.eclipse.org/emf/2002/Ecore" as ecore
+
+// general TODO: naming is inconsistent, e.g., 
+// - [Data]
+// - [Data|ValidID]
+// - [Data|QualifiedName]
+
+RosettaModel:
+	 (overridden?='override')? 'namespace' name=(QualifiedName | STRING) (':' RosettaDefinable)? // TODO do we need STRING here? It is not supported for highlighting.
+	// TODO colon is inconsistent with other documentation
+	
+	scope=RosettaScope?
+	('version' version=STRING)? // TODO: could do better than STRING
+	
+	imports+=Import*
+	
+	configurations+=RosettaQualifiableConfiguration* // TODO think about having only RootElements or only configurations
+	elements+=RosettaRootElement*
+;
+
+QualifiedName:
+	ValidID ('.' ValidID)*
+;
+
+RosettaScope:
+	'scope' name=ValidID RosettaDefinable?
+;
+
+Import:
+	'import' importedNamespace=QualifiedNameWithWildcard ('as' namespaceAlias=ValidID)?;
+
+QualifiedNameWithWildcard:
+	QualifiedName ('.' '*')?;
+
+Annotation:
+	'annotation' RosettaNamed ':' RosettaDefinable?
+	('[' 'prefix' prefix = ValidID ']')?
+	attributes+=Attribute*
+;
+
+fragment Annotations returns Annotated:
+	annotations+=AnnotationRef;
+
+fragment References*:
+	references+=RosettaDocReference;
+
+fragment RuleReference*:
+	ruleReferences+=RuleReferenceAnnotation;
+// TODO: cleanup annotations. Now it's a mix of hard-coded annotations and these kind of annotations.
+// Hard-coded:
+// - prefix annotation
+// - docReference
+// - ruleReference
+AnnotationRef:
+	'[' annotation = [Annotation|QualifiedName] (attribute = [Attribute|ValidID] (qualifiers += AnnotationQualifier)*)? ']'
+;
+
+AnnotationQualifier:
+	qualName=STRING '=' (qualValue=STRING | qualPath=RosettaAttributeReference)
+;
+
+Data:
+	'type' RosettaNamed ('extends' superType = [Data|QualifiedName])? ':' RosettaDefinable?
+	(References|Annotations)*
+	attributes+=Attribute*
+	conditions+=Condition*
+;
+
+Choice:
+	'choice' RosettaNamed ':' RosettaDefinable?
+	Annotations*
+
+	attributes+=ChoiceOption*
+;
+
+ChoiceOption:
+	RosettaTyped RosettaDefinable?
+	(References|Annotations|labels+=LabelAnnotation|RuleReference)*
+;
+
+Attribute:
+	override?='override'? RosettaNamed RosettaTyped card=RosettaCardinality
+	RosettaDefinable?
+	(References|Annotations|labels+=LabelAnnotation|RuleReference)*
+;
+
+Enumeration returns RosettaEnumeration:
+	'enum' RosettaNamed ('extends' parent=[RosettaEnumeration|QualifiedName])? ':' RosettaDefinable?
+		(References|Annotations)*
+		enumValues += RosettaEnumValue*
+;
+
+Function:
+	'func'
+	(
+		RosettaNamed
+		| ({FunctionDispatch} RosettaNamed '(' attribute=[Attribute|ValidID] ':' value=EnumValueReference')')
+	)
+	('extends' superFunction=[Function|QualifiedName])?
+	':' RosettaDefinable?
+	(transform+=TransformAnnotation|References|Annotations)*
+	('inputs' ':' inputs += Attribute+)?
+	('output' ':' output = Attribute)?
+	
+	(shortcuts     += ShortcutDeclaration)*
+	conditions     += Condition*
+	operations     += Operation*
+	postConditions += PostCondition*
+;
+
+ShortcutDeclaration:
+	'alias' RosettaNamed ':' =>RosettaDefinable?  expression=Expression // Predicate necessary because of conflict between `<` as the start of documentation and as an operator.
+;
+
+Condition:
+	'condition' RosettaNamed? ':' =>RosettaDefinable? // Predicate necessary because of conflict between `<` as the start of documentation and as an operator.
+		=>(References|Annotations)* // Predicate necessary because of conflict between `[` as the start of an annotation and as the start of a list literal.
+		expression=Expression
+;
+
+enum Necessity:
+	optional | required
+;
+
+PostCondition returns Condition:
+	postCondition ?= 'post-condition'  RosettaNamed? ':' =>RosettaDefinable? // Predicate necessary because of conflict between `<` as the start of documentation and as an operator.
+	expression     = Expression
+;
+
+Operation:
+	('set' | add ?= 'add') assignRoot = [AssignPathRoot|ValidID] (path = Segment)? ':' =>RosettaDefinable?
+		expression = ExpressionWithAsKey
+;
+
+Segment:
+	'->' feature = [RosettaTypedFeature|ValidID] (next = Segment)?;
+
+EnumValueReference returns RosettaEnumValueReference:
+	enumeration=[RosettaEnumeration|QualifiedName] '->' value=[RosettaEnumValue|ValidID]
+;
+
+EmptyLiteral returns RosettaExpression:
+	{ListLiteral} 'empty'
+;
+
+ListLiteral:
+	{ListLiteral} '[' (elements += Expression (',' elements += Expression )*)? ']';
+
+RosettaRootElement:
+	Enumeration
+	| RosettaBody
+	| RosettaCorpus
+	| RosettaSegment
+	| RosettaBasicType
+	| RosettaRecordType
+	| RosettaLibraryFunction
+	| RosettaRule
+	| RosettaMetaType
+	| RosettaExternalRuleSource
+	| RosettaReport
+	| RosettaTypeAlias
+	| Annotation
+	| Data
+	| Choice
+	| Function
+	| Schema
+;
+
+Schema:
+	'schema' RosettaNamed format=[RosettaEnumValue|ValidID] RosettaDefinable?
+	Annotations*
+;
+
+enum TransformKind:
+	  INGEST = 'ingest'
+	| ENRICH = 'enrich'
+	| PROJECTION = 'projection'
+;
+
+TransformAnnotation:
+	'[' kind=TransformKind (ref=[SchemaOrFormat|QualifiedName])? ']'
+;
+
+
+
+/**********************************************************************
+ * Common rules 
+ */
+fragment RosettaDefinable: // TODO should a definition be able to hold any character? Escape characters? Spaces between '<' and '"'?
+	('<' definition=STRING '>') // TODO rename to documentation?
+;
+
+fragment RosettaNamed:
+	name = ValidID
+;
+
+fragment RosettaTyped:
+	typeCall=TypeCall
+;
+
+TypeCall:
+	type=[RosettaType|QualifiedName] ('(' arguments+=TypeCallArgument (',' arguments+=TypeCallArgument)* ')')?
+;
+
+TypeCallArgument:
+	parameter=[TypeParameter|TypeParameterValidID] ':' value=TypeCallArgumentExpression
+;
+
+TypeCallArgumentExpression returns RosettaExpression:
+	TypeParameterReference
+	| RosettaLiteral
+;
+
+TypeParameterReference returns RosettaSymbolReference:
+	symbol=[RosettaSymbol|TypeParameterValidID]
+;
+
+TypeParameterValidID:
+	ValidID | 'min' | 'max'
+;
+
+ValidID:
+	ID | 'condition' | 'source' | 'version' | 'scope' | 'ingest' | 'enrich' | 'projection'
+;
+
+
+/**********************************************************************
+ * Built-in
+ */ 
+
+RosettaBasicType:
+	'basicType' RosettaNamed TypeParameters? RosettaDefinable?
+;
+
+fragment TypeParameters returns ParametrizedRosettaType:
+	'(' parameters+=TypeParameter (',' parameters+=TypeParameter)* ','? ')'
+;
+
+TypeParameter:
+	name=TypeParameterValidID RosettaTyped RosettaDefinable?
+;
+
+RosettaRecordType:
+	'recordType' RosettaNamed '{' RosettaDefinable?
+		features+=RosettaRecordFeature*
+	'}'
+;
+
+RosettaRecordFeature:
+	RosettaNamed RosettaTyped
+;
+
+RosettaParameter:
+	RosettaNamed RosettaTyped (isArray?='[' ']')?
+;
+// TODO get rid of these
+RosettaLibraryFunction returns RosettaExternalFunction:
+	'library' 'function' RosettaNamed '(' (parameters+=RosettaParameter (',' parameters+=RosettaParameter)*)? ')' RosettaTyped RosettaDefinable? 
+;
+
+/**********************************************************************
+ * Data model 
+ */
+RosettaTypeAlias:
+	'typeAlias' RosettaNamed TypeParameters?
+	':' RosettaDefinable?
+	RosettaTyped
+	Annotations*
+	conditions += Condition*
+;
+
+
+// TODO: get rid of this one?
+RosettaMetaType:
+	'metaType' RosettaNamed RosettaTyped
+;
+
+RosettaEnumValue:
+	RosettaNamed ('displayName' display=STRING)? RosettaDefinable?
+		(References|Annotations)*
+;
+
+RosettaCardinality:
+	'(' (inf=INT '..' sup=INT | inf=INT '..' unbounded?='*') ')'
+;
+
+RosettaDataReference returns RosettaAttributeReferenceSegment:
+	{RosettaDataReference} data=[Data|QualifiedName]
+;
+
+RosettaAttributeReference returns RosettaAttributeReferenceSegment:
+	RosettaDataReference ({RosettaAttributeReference.receiver=current} '->' attribute=[Attribute|ValidID])+
+;
+
+/**********************************************************************
+ * Things
+ */ 
+ 
+RosettaDocReference:
+	'[' name=('docReference') ('for' path=AnnotationPathExpression)? docReference=RegulatoryDocumentReference
+		(rationales+=DocumentRationale)*
+		('structured_provision' structuredProvision=STRING)?
+		('provision' provision=STRING)?
+		(reportedField?='reportedField')? ']'
+;
+
+DocumentRationale:
+	  'rationale' rationale=STRING
+	  (->'rationale_author' rationaleAuthor=STRING)? // Predicate necessary because otherwise `rationale_author` can be interpreted as a new `DocumentRationale` instead.
+	  |
+	  'rationale_author' rationaleAuthor=STRING
+	  (->'rationale' rationale=STRING)? // Predicate necessary because otherwise `rationale` can be interpreted as a new `DocumentRationale` instead.
+;
+
+
+RosettaBody:
+	'body' bodyType=ID RosettaNamed RosettaDefinable?
+;
+
+RosettaCorpus:
+	'corpus' corpusType=ID (body=[RosettaBody|QualifiedName])? (displayName=STRING)? RosettaNamed RosettaDefinable?
+;
+
+RosettaSegment:
+	'segment' name=ValidID
+;
+
+
+/**********************************************************************
+ * Expressions 
+ */ 
+
+RosettaReferenceOrFunctionCall returns RosettaExpression:
+	  ({RosettaSuperCall} name='super' | {RosettaSymbolReference} symbol=[RosettaSymbol|QualifiedName]) (explicitArguments?='(' (rawArgs+=Expression (',' rawArgs+=Expression)*)? ')')?
+	| RosettaImplicitVariable
+;
+
+RosettaImplicitVariable:
+	name='item'
+;
+
+RosettaLiteral:
+	RosettaBooleanLiteral
+	| RosettaStringLiteral
+	| RosettaNumberLiteral
+	| RosettaIntLiteral
+//	| RosettaPatternLiteral // See issue https://github.com/finos/rune-dsl/issues/524
+;
+
+RosettaBooleanLiteral:
+	value?='True' | {RosettaBooleanLiteral} 'False'
+;
+
+RosettaStringLiteral:
+	value = STRING
+;
+
+RosettaNumberLiteral:
+	value = BigDecimal
+;
+
+RosettaIntLiteral:
+	value = Integer
+;
+
+// See issue https://github.com/finos/rune-dsl/issues/524
+//RosettaPatternLiteral:
+//	value = PATTERN
+//;
+
+BigDecimal returns ecore::EBigDecimal hidden():
+	('+' | '-')? ('.' INT | INT '.' | INT '.' INT) (('e' | 'E') ('+' | '-') INT | ID)?
+;
+
+Integer returns ecore::EBigInteger hidden():
+	('+' | '-')? INT
+;
+
+// See issue https://github.com/finos/rune-dsl/issues/524
+//terminal PATTERN returns Pattern:
+//	'/' ( '\\' . | !('\\'|'/') )* '/'
+//;
+
+
+/**********************************************************************
+ * QualifiableConfiguration
+ */
+RosettaQualifiableConfiguration:
+	qType = RosettaQualifiableType 'root' rosettaClass = [Data|QualifiedName]';'
+;
+
+enum RosettaQualifiableType :
+	Event = "isEvent"| Product = "isProduct"
+;
+
+
+/**********************************************************************
+ * Function references
+ */
+ClosureParameter:
+	name = ID
+;
+
+InlineFunction:
+	=>((parameters+=ClosureParameter (',' parameters += ClosureParameter)*)? '[') body=Expression ']'
+	// Predicate necessary because otherwise a ClosureParameter conflicts with a symbol reference inside an ImplicitInlineFunction.
+;
+
+ImplicitInlineFunction returns InlineFunction:
+	body=OrOperation
+;
+
+/**********************************************************************
+ * Expressions
+ */
+
+ExpressionWithAsKey returns RosettaExpression:
+	Expression ->({AsKeyOperation.argument=current} operator='as-key')?
+;
+
+Expression returns RosettaExpression:
+	ThenOperation
+;
+
+ThenOperation returns RosettaExpression:
+	OrOperation (->({ThenOperation.argument=current} operator='then') (=>function=ImplicitInlineFunction)?)*
+;
+
+/*
+ * Binary operations
+ */
+enum CardinalityModifier:
+	  ANY = 'any'
+	| ALL = 'all'
+;
+
+OrOperation returns RosettaExpression:
+	AndOperation ( ->({LogicalOperation.left=current} operator='or') right=AndOperation)*
+	// Without left parameter:
+	| ({LogicalOperation} operator='or' right=AndOperation) (->({LogicalOperation.left=current} operator='or') right=AndOperation)*
+;
+
+AndOperation returns RosettaExpression:
+	EqualityOperation ( ->({LogicalOperation.left=current} operator='and') right=EqualityOperation)*
+	// Without left parameter:
+	| (({LogicalOperation} operator='and' right=EqualityOperation) (->({LogicalOperation.left=current} operator='and') right=EqualityOperation)*)
+;
+
+EqualityOperation returns RosettaExpression:
+	// Note: using a syntactic predicate `=>` instead of a first token set predicate `->` because of the cardinality modifier, which might be used
+	// for both equality expressions and comparison expressions.
+	ComparisonOperation ( =>({EqualityOperation.left=current} (cardMod=CardinalityModifier)? operator=('='|'<>')) right=ComparisonOperation)*
+	// Without left parameter:
+	| (({EqualityOperation} (cardMod=CardinalityModifier)? operator=('='|'<>') right=ComparisonOperation) (=>({EqualityOperation.left=current} (cardMod=CardinalityModifier)? operator=('='|'<>')) right=ComparisonOperation)*)
+;
+
+ComparisonOperation returns RosettaExpression:
+	// Note: using a syntactic predicate `=>` instead of a first token set predicate `->` because of the cardinality modifier, which might be used
+	// for both equality expressions and comparison expressions.
+	AdditiveOperation ( =>({ComparisonOperation.left=current} (cardMod=CardinalityModifier)? operator=(">="|"<="|">"|"<")) right=AdditiveOperation)*
+	// Without left parameter:
+	| (({ComparisonOperation} (cardMod=CardinalityModifier)? operator=(">="|"<="|">"|"<") right=AdditiveOperation) (=>({ComparisonOperation.left=current} (cardMod=CardinalityModifier)? operator=(">="|"<="|">"|"<")) right=AdditiveOperation)*)
+;
+
+AdditiveOperation returns RosettaExpression:
+	MultiplicativeOperation ( ->({ArithmeticOperation.left=current} operator=('+'|'-')) right=MultiplicativeOperation)*
+;
+
+MultiplicativeOperation returns RosettaExpression:
+	BinaryOperation ( ->({ArithmeticOperation.left=current} operator=('*'|'/')) right=BinaryOperation)*
+	// Without left parameter:
+	| (({ArithmeticOperation} operator=('*'|'/') right=BinaryOperation) (->({ArithmeticOperation.left=current} operator=('*'|'/')) right=BinaryOperation)*)
+;
+
+BinaryOperation returns RosettaExpression:
+	UnaryOperation (->(
+		{RosettaContainsExpression.left=current} operator='contains' right=UnaryOperation
+		| {RosettaDisjointExpression.left=current} operator='disjoint' right=UnaryOperation
+		| {DefaultOperation.left=current} operator='default' right=UnaryOperation
+		| {JoinOperation.left=current} operator='join' (=>right=UnaryOperation)?
+	))?
+	| // Without left parameter:
+	(
+		->(
+			{RosettaContainsExpression} operator='contains' right=UnaryOperation
+			| {RosettaDisjointExpression} operator='disjoint' right=UnaryOperation
+			| {DefaultOperation} operator='default' right=UnaryOperation
+			| {JoinOperation} operator='join' (=>right=UnaryOperation)?
+		)
+		(->(
+			{RosettaContainsExpression.left=current} operator='contains' right=UnaryOperation
+			| {RosettaDisjointExpression.left=current} operator='disjoint' right=UnaryOperation
+			| {DefaultOperation.left=current} operator='default' right=UnaryOperation
+			| {JoinOperation.left=current} operator='join' (=>right=UnaryOperation)?
+		))?
+	)
+;
+
+/**
+ * Unary operations
+ */
+enum ExistsModifier:
+	  SINGLE='single'
+	| MULTIPLE='multiple'
+;
+
+SwitchCaseOrDefault:
+	'default' expression=Expression
+ 	| guard=SwitchCaseGuard 'then' expression=Expression
+;
+
+SwitchCaseGuard:
+	literalGuard=RosettaLiteral | referenceGuard=[SwitchCaseTarget|QualifiedName]
+;
+
+WithMetaEntry:
+	key=[RosettaFeature|ValidID] ':' value=Expression
+;
+
+UnaryOperation returns RosettaExpression:
+	PrimaryExpression
+	(
+		->(
+			 ({RosettaFeatureCall.receiver=current} '->' (->feature=[RosettaFeature|ValidID])?)
+			|({RosettaDeepFeatureCall.receiver=current} '->>' (->feature=[RosettaFeature|ValidID])?)
+			|({RosettaExistsExpression.argument=current} (modifier=ExistsModifier)? operator='exists')
+			|({RosettaAbsentExpression.argument=current} 'is' operator='absent')
+			|({RosettaOnlyElement.argument=current} operator='only-element')
+			|({RosettaCountOperation.argument=current} operator='count')
+			|({FlattenOperation.argument=current} operator='flatten')
+			|({DistinctOperation.argument=current} operator='distinct')
+			|({ReverseOperation.argument=current} operator='reverse')
+			|({FirstOperation.argument=current} operator='first')
+			|({LastOperation.argument=current} operator='last')
+			|({SumOperation.argument=current} operator='sum')
+			|({OneOfOperation.argument=current} operator='one-of')
+			|({ChoiceOperation.argument=current} necessity=Necessity operator='choice' attributes+=[Attribute|ValidID] ->(',' attributes+=[Attribute|ValidID])*)
+			|({ToStringOperation.argument=current} operator='to-string')
+			|({ToNumberOperation.argument=current} operator='to-number')
+			|({ToIntOperation.argument=current} operator='to-int')
+			|({ToTimeOperation.argument=current} operator='to-time')
+			|({ToEnumOperation.argument=current} operator='to-enum' enumeration=[RosettaEnumeration|QualifiedName])
+			|({ToDateOperation.argument=current} operator='to-date')
+			|({ToDateTimeOperation.argument=current} operator='to-date-time')
+			|({ToZonedDateTimeOperation.argument=current} operator='to-zoned-date-time')
+			|({SwitchOperation.argument=current} operator='switch' ->(cases+=SwitchCaseOrDefault ->(',' cases+=SwitchCaseOrDefault)*)?)
+			|({WithMetaOperation.argument=current} operator='with-meta' ('{' (entries+=WithMetaEntry (',' entries+=WithMetaEntry)*)? '}')?)
+			|({AsOperation.argument=current} operator='as' type=[SwitchCaseTarget|QualifiedName])
+		)
+		| ->(
+			({SortOperation.argument=current} operator='sort')
+			|({MinOperation.argument=current} operator='min')
+			|({MaxOperation.argument=current} operator='max')
+		) (function=InlineFunction)?
+		| ->(
+			 ({ReduceOperation.argument=current} operator='reduce')
+			|({FilterOperation.argument=current} operator='filter')
+			|({MapOperation.argument=current} operator='extract')
+		) (function=InlineFunction|=>function=ImplicitInlineFunction)?
+	)*
+	| // Without left parameter:
+	(
+		(
+			 ({RosettaExistsExpression} (modifier=ExistsModifier)? operator='exists')
+			|({RosettaAbsentExpression} 'is' operator='absent')
+			|({RosettaOnlyElement} operator='only-element')
+			|({RosettaCountOperation} operator='count')
+			|({FlattenOperation} operator='flatten')
+			|({DistinctOperation} operator='distinct')
+			|({ReverseOperation} operator='reverse')
+			|({FirstOperation} operator='first')
+			|({LastOperation} operator='last')
+			|({SumOperation} operator='sum')
+			|({OneOfOperation} operator='one-of')
+			|({ChoiceOperation} necessity=Necessity operator='choice' attributes+=[Attribute|ValidID] ->(',' attributes+=[Attribute|ValidID])*)
+			|({ToStringOperation} operator='to-string')
+			|({ToNumberOperation} operator='to-number')
+			|({ToIntOperation} operator='to-int')
+			|({ToTimeOperation} operator='to-time')
+			|({ToEnumOperation} operator='to-enum' enumeration=[RosettaEnumeration|QualifiedName])
+			|({ToDateOperation} operator='to-date')
+			|({ToDateTimeOperation} operator='to-date-time')
+			|({ToZonedDateTimeOperation} operator='to-zoned-date-time')
+			|({SwitchOperation} operator='switch' ->(cases+=SwitchCaseOrDefault ->(',' cases+=SwitchCaseOrDefault)*)?)
+			|({WithMetaOperation} operator='with-meta' ('{' (entries+=WithMetaEntry (',' entries+=WithMetaEntry)*)? '}')?)
+			|({AsOperation} operator='as' type=[SwitchCaseTarget|QualifiedName])
+		)
+		| (
+			({SortOperation} operator='sort')
+			|({MinOperation} operator='min')
+			|({MaxOperation} operator='max')
+		) (function=InlineFunction)?
+		| (
+			 ({ReduceOperation} operator='reduce')
+			|({FilterOperation} operator='filter')
+			|({MapOperation} operator='extract')
+		) (function=InlineFunction|=>function=ImplicitInlineFunction)?
+	)
+	(
+		->(
+			 ({RosettaFeatureCall.receiver=current} '->' (->feature=[RosettaFeature|ValidID])?)
+			|({RosettaDeepFeatureCall.receiver=current} '->>' (->feature=[RosettaFeature|ValidID])?)
+			|({RosettaExistsExpression.argument=current} (modifier=ExistsModifier)? operator='exists')
+			|({RosettaAbsentExpression.argument=current} 'is' operator='absent')
+			|({RosettaOnlyElement.argument=current} operator='only-element')
+			|({RosettaCountOperation.argument=current} operator='count')
+			|({FlattenOperation.argument=current} operator='flatten')
+			|({DistinctOperation.argument=current} operator='distinct')
+			|({ReverseOperation.argument=current} operator='reverse')
+			|({FirstOperation.argument=current} operator='first')
+			|({LastOperation.argument=current} operator='last')
+			|({SumOperation.argument=current} operator='sum')
+			|({OneOfOperation.argument=current} operator='one-of')
+			|({ChoiceOperation.argument=current} necessity=Necessity operator='choice' attributes+=[Attribute|ValidID] ->(',' attributes+=[Attribute|ValidID])*)
+			|({ToStringOperation.argument=current} operator='to-string')
+			|({ToNumberOperation.argument=current} operator='to-number')
+			|({ToIntOperation.argument=current} operator='to-int')
+			|({ToTimeOperation.argument=current} operator='to-time')
+			|({ToEnumOperation.argument=current} operator='to-enum' enumeration=[RosettaEnumeration|QualifiedName])
+			|({ToDateOperation.argument=current} operator='to-date')
+			|({ToDateTimeOperation.argument=current} operator='to-date-time')
+			|({ToZonedDateTimeOperation.argument=current} operator='to-zoned-date-time')
+			|({SwitchOperation.argument=current} operator='switch' ->(cases+=SwitchCaseOrDefault ->(',' cases+=SwitchCaseOrDefault)*)?)
+			|({WithMetaOperation.argument=current} operator='with-meta' ('{' (entries+=WithMetaEntry (',' entries+=WithMetaEntry)*)? '}')?)
+			|({AsOperation.argument=current} operator='as' type=[SwitchCaseTarget|QualifiedName])
+		)
+		| ->(
+			({SortOperation.argument=current} operator='sort')
+			|({MinOperation.argument=current} operator='min')
+			|({MaxOperation.argument=current} operator='max')
+		) (function=InlineFunction)?
+		| ->(
+			 ({ReduceOperation.argument=current} operator='reduce')
+			|({FilterOperation.argument=current} operator='filter')
+			|({MapOperation.argument=current} operator='extract')
+		) (function=InlineFunction|=>function=ImplicitInlineFunction)?
+	)*
+;
+
+/**
+ * Primary operations
+ */
+PrimaryExpression returns RosettaExpression:
+	ConstructorExpression
+	| RosettaCalcConditionalExpression
+	| RosettaCalcOnlyExists
+	| RosettaReferenceOrFunctionCall
+	| RosettaLiteral
+	| EmptyLiteral
+	| ListLiteral
+	| '(' Expression ')'
+;
+
+ConstructorExpression returns RosettaExpression:
+	{RosettaConstructorExpression} typeCall=TypeCall '{' ((values+=ConstructorKeyValuePair (',' values+=ConstructorKeyValuePair)* (',' | ',' implicitEmpty?='...')?) | implicitEmpty?='...')? '}'
+;
+
+ConstructorKeyValuePair:
+	key=[RosettaFeature|ValidID] ':' value=ExpressionWithAsKey
+;
+
+RosettaCalcConditionalExpression returns RosettaExpression:
+	 {RosettaConditionalExpression} 'if' if=OrOperation 'then' ifthen=OrOperation (->full?='else' elsethen=OrOperation)?
+;
+
+RosettaCalcOnlyExists returns RosettaExpression:
+	{RosettaOnlyExistsExpression} (args+=RosettaOnlyExistsElement | (hasParentheses?='(' args+=RosettaOnlyExistsElement (',' args+=RosettaOnlyExistsElement)* ')')) 'only' 'exists'
+;
+
+RosettaOnlyExistsElement returns RosettaExpression:
+	RosettaOnlyExistsElementRoot ({RosettaFeatureCall.receiver=current} '->' feature=[RosettaFeature|ValidID])*
+;
+
+RosettaOnlyExistsElementRoot returns RosettaExpression:
+	{RosettaSymbolReference} symbol=[RosettaSymbol|QualifiedName]
+	| RosettaImplicitVariable
+;
+
+/*****************************************
+ * External rule support
+ *****************************************/
+
+RosettaExternalRuleSource:
+	'rule' 'source' RosettaNamed ('extends' superSource=[RosettaExternalRuleSource|QualifiedName])?
+	'{'
+        (externalClasses+=RosettaExternalClass)*
+    '}'
+;
+
+RosettaExternalClass:
+	data=[Data|QualifiedName] ':'
+		(regularAttributes += RosettaExternalRegularAttribute)*
+;
+
+enum ExternalValueOperator:
+	PLUS='+'
+	| MINUS='-'
+;
+
+RosettaExternalRegularAttribute:
+	operator=ExternalValueOperator attributeRef=[RosettaFeature|ValidID]
+		externalRuleReferences+=RuleReferenceAnnotation*
+;
+
+/*****************************************
+ * Reporting support
+ *****************************************/
+
+RegulatoryDocumentReference:
+	body=[RosettaBody|QualifiedName] corpusList+=[RosettaCorpus|QualifiedName]+ segments+=RosettaSegmentRef*
+;
+
+RosettaSegmentRef:
+	segment=[RosettaSegment|QualifiedName] segmentRef=STRING
+;
+
+/*****************************************
+ * Reporting
+ */
+ 
+RosettaReport:
+	'report' regulatoryBody=RegulatoryDocumentReference
+	'in' ('real-time'|'T+1'|'T+2'|'T+3'|'T+4'|'T+5'|'ASATP')
+	'from' inputType=TypeCall
+	'when'
+	eligibilityRules+=[RosettaRule|QualifiedName] ('and' eligibilityRules+=[RosettaRule|QualifiedName])*
+	'with' 'type' reportType=[Data|QualifiedName]
+	('with' 'source' ruleSource=[RosettaExternalRuleSource|QualifiedName])?
+;
+
+RuleReferenceAnnotation:
+	// The action is necessary so that `[ruleReference empty]`, whose only assignments are keywords,
+	// gets a region in the formatter's region access - without it, the formatter cannot format it.
+	{RuleReferenceAnnotation} '[' name='ruleReference' ('for' path=AnnotationPathExpression)? (reportingRule=[RosettaRule|QualifiedName] | empty?='empty') ']'	
+;
+
+RosettaRule:
+ 	('reporting'|eligibility?='eligibility') 'rule' RosettaNamed ('from' input=TypeCall)? ':' =>RosettaDefinable? // Predicate necessary because of conflict between `<` as the start of documentation and as an operator.
+ 	(
+		References*
+		(expression = Expression)
+ 	)
+;
+
+/**********************************
+ * Labels
+ */
+LabelAnnotation:
+	'[' name='label' ('for' path=AnnotationPathExpression)? label=STRING ']'
+;
+AnnotationPathExpression:
+	NestedAnnotationPath
+;
+NestedAnnotationPath returns AnnotationPathExpression:
+	PrimaryAnnotationPath ->(
+			 ({AnnotationPath.receiver=current} operator='->' attribute=[Attribute|ValidID])
+			|({AnnotationDeepPath.receiver=current} operator='->>' attribute=[Attribute|ValidID])
+		)*
+;
+PrimaryAnnotationPath returns AnnotationPathExpression:
+	{AnnotationPathAttributeReference} attribute=[Attribute|ValidID]
+	| RosettaImplicitVariable
+;

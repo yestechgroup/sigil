@@ -1,0 +1,12 @@
+namespace demo.inh
+
+type Base:
+	id string (1..1)
+
+type Child extends Base:
+	name string (0..1)
+	override id int (1..1)
+
+type GrandChild extends Child:
+	[metadata key]
+	extra string (0..*)

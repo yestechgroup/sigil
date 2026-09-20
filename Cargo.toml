@@ -1,0 +1,27 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/sigil-diag",
+    "crates/sigil-syntax",
+    "crates/sigil-model",
+    "crates/sigil-resolve",
+    "crates/sigil-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/yestechgroup/sigil"
+
+[workspace.dependencies]
+chumsky = "0.13.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sigil-diag = { path = "crates/sigil-diag" }
+sigil-syntax = { path = "crates/sigil-syntax" }
+sigil-model = { path = "crates/sigil-model" }
+sigil-resolve = { path = "crates/sigil-resolve" }
+
+[profile.release]
+lto = "thin"

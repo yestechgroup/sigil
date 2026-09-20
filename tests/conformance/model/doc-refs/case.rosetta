@@ -1,0 +1,9 @@
+namespace demo.docs
+
+type Product:
+	[docReference CFTC Part45 "S1" "S2" rationale "why" provision "prov text"]
+	[ruleReference ProductRules]
+	[label "A product"]
+	productId string (1..1)
+		[label "for"=item->productId]
+		[docReference for productId BCBS MAR "101" reportedField]

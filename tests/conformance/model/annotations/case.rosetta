@@ -1,0 +1,8 @@
+namespace demo.anno
+
+type Deal:
+	[metadata id]
+	dealId string (1..1)
+	price number (1..1)
+		[metadata scheme "pointsTo"=Deal->dealId]
+	scheme string (0..1)

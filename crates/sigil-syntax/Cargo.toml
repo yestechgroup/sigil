@@ -1,0 +1,12 @@
+[package]
+name = "sigil-syntax"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Chumsky-based parser for the Rune (.rosetta) DSL producing a spanned AST"
+
+[dependencies]
+chumsky = { workspace = true }
+sigil-diag = { workspace = true }
+sigil-model = { workspace = true }

@@ -1,0 +1,8 @@
+namespace res.main
+
+import res.base.*
+import com.rosetta.model.metafields.*
+
+type Trade:
+	party Party (1..1)
+	currency string (1..1)

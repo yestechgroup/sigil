@@ -1,0 +1,13 @@
+namespace oracle.currency
+
+enum Currency: <"ISO currencies">
+	EUR <"Euro">
+	USD displayName "US Dollar"
+	GBP
+
+enum SubCurrency extends Currency:
+	JPY
+
+type Holding:
+	currency Currency (1..1)
+	amount number(digits: 30) (0..1)

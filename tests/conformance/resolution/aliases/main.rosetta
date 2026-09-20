@@ -1,0 +1,6 @@
+namespace ali.main
+
+import ali.dep.* as dep
+
+type T:
+	x int (1..1)

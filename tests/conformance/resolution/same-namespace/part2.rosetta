@@ -1,0 +1,4 @@
+namespace res.split
+
+type Two:
+	one One (1..1)

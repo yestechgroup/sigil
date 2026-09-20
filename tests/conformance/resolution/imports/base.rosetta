@@ -1,0 +1,5 @@
+namespace res.base
+
+type Party:
+	[metadata key]
+	partyId string (1..1)
