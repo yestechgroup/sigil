@@ -85,4 +85,4 @@ jobs:
         with:
           cache-on-failure: true
       - name: Run benchmarks (reduced sample size)
-        run: cargo bench --workspace -- --sample-size 10 --warm-up-time 1 --measurement-time 2
+        run: cargo bench --workspace --bench pipeline --bench reanalysis -- --sample-size 10 --warm-up-time 1 --measurement-time 2
