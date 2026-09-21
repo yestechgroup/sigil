@@ -676,7 +676,36 @@
               "annotations": [],
               "cardinality": "(1..1)",
               "definition": null,
-              "docReferences": [],
+              "docReferences": [
+                {
+                  "body": "CFTC",
+                  "corpora": [
+                    "Part45"
+                  ],
+                  "forPath": [
+                    "productId"
+                  ],
+                  "provision": "prov text",
+                  "rationales": [
+                    {
+                      "rationale": "why",
+                      "rationale_author": null
+                    }
+                  ],
+                  "reported_field": true,
+                  "segments": [
+                    [
+                      "S1",
+                      "S1"
+                    ],
+                    [
+                      "S2",
+                      "S2"
+                    ]
+                  ],
+                  "structured_provision": null
+                }
+              ],
               "labels": [],
               "name": "productId",
               "override": false,
@@ -696,22 +725,13 @@
               "corpora": [
                 "Part45"
               ],
-              "provision": "prov text",
-              "rationales": [
-                {
-                  "rationale": "why",
-                  "rationale_author": null
-                }
-              ],
+              "provision": null,
+              "rationales": [],
               "reported_field": false,
               "segments": [
                 [
                   "S1",
                   "S1"
-                ],
-                [
-                  "S2",
-                  "S2"
                 ]
               ],
               "structured_provision": null

@@ -13,6 +13,11 @@
 use serde::Serialize;
 use serde_json::json;
 
+// Read-only traversal API, defined in the sibling module and re-exported
+// here so `sigil_model::expr::{ExprVisitor, walk, ExprFamily}` is the
+// single place consumers look.
+pub use crate::expr_visit::{walk, ExprFamily, ExprVisitor};
+
 /// `CardinalityModifier` (`none` is the Ecore default, never written).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CardinalityModifier {
@@ -511,6 +516,166 @@ impl Expr {
                 function.as_ref().map(|f| f.parameters.clone())
             }
             _ => None,
+        }
+    }
+
+    /// Visit every direct sub-expression, in source order — the read-only
+    /// counterpart of [`Expr::for_each_child_mut`]. Exhaustive: a new
+    /// variant cannot be added without saying here how it is traversed.
+    pub fn for_each_child<F: FnMut(&Expr)>(&self, f: &mut F) {
+        match self {
+            Expr::BooleanLiteral { .. }
+            | Expr::StringLiteral { .. }
+            | Expr::NumberLiteral { .. }
+            | Expr::IntLiteral { .. }
+            | Expr::ImplicitVariable => {}
+            Expr::ListLiteral { elements } => {
+                for e in elements {
+                    f(e);
+                }
+            }
+            Expr::SymbolReference { raw_args, .. } => {
+                for a in raw_args {
+                    f(a);
+                }
+            }
+            Expr::FeatureCall { receiver, .. } | Expr::DeepFeatureCall { receiver, .. } => {
+                f(receiver)
+            }
+            Expr::ArithmeticOperation { left, right, .. }
+            | Expr::LogicalOperation { left, right, .. }
+            | Expr::EqualityOperation { left, right, .. }
+            | Expr::ComparisonOperation { left, right, .. }
+            | Expr::ContainsExpression { left, right }
+            | Expr::DisjointExpression { left, right }
+            | Expr::DefaultOperation { left, right }
+            | Expr::JoinOperation { left, right, .. } => {
+                f(left);
+                f(right);
+            }
+            Expr::ConditionalExpression {
+                if_,
+                ifthen,
+                elsethen,
+                ..
+            } => {
+                f(if_);
+                f(ifthen);
+                f(elsethen);
+            }
+            Expr::OnlyExistsExpression { args, .. } => {
+                for a in args {
+                    f(a);
+                }
+            }
+            Expr::ExistsExpression { argument, .. }
+            | Expr::AbsentExpression { argument }
+            | Expr::OnlyElement { argument }
+            | Expr::CountOperation { argument }
+            | Expr::FlattenOperation { argument }
+            | Expr::DistinctOperation { argument }
+            | Expr::ReverseOperation { argument }
+            | Expr::FirstOperation { argument }
+            | Expr::LastOperation { argument }
+            | Expr::SumOperation { argument }
+            | Expr::AsKeyOperation { argument }
+            | Expr::OneOfOperation { argument }
+            | Expr::ChoiceOperation { argument, .. }
+            | Expr::ToStringOperation { argument }
+            | Expr::ToNumberOperation { argument }
+            | Expr::ToIntOperation { argument }
+            | Expr::ToTimeOperation { argument }
+            | Expr::ToEnumOperation { argument, .. }
+            | Expr::ToDateOperation { argument }
+            | Expr::ToDateTimeOperation { argument }
+            | Expr::ToZonedDateTimeOperation { argument }
+            | Expr::WithMetaOperation { argument, .. }
+            | Expr::AsOperation { argument, .. } => f(argument),
+            Expr::SwitchOperation { argument, cases } => {
+                f(argument);
+                for case in cases {
+                    if let Some(SwitchGuard::Literal(literal)) = &case.guard {
+                        f(literal);
+                    }
+                    f(&case.expression);
+                }
+            }
+            Expr::ThenOperation { argument, function }
+            | Expr::FilterOperation { argument, function }
+            | Expr::MapOperation { argument, function }
+            | Expr::ReduceOperation { argument, function }
+            | Expr::SortOperation { argument, function }
+            | Expr::MinOperation { argument, function }
+            | Expr::MaxOperation { argument, function } => {
+                f(argument);
+                if let Some(function) = function {
+                    f(&function.body);
+                }
+            }
+            Expr::ConstructorExpression { values, .. } => {
+                for pair in values {
+                    f(&pair.value);
+                }
+            }
+        }
+    }
+
+    /// The variant family of this node; see [`ExprFamily`] for the
+    /// taxonomy. Exhaustive, so a new variant forces a classification.
+    pub fn family(&self) -> ExprFamily {
+        match self {
+            Expr::BooleanLiteral { .. }
+            | Expr::StringLiteral { .. }
+            | Expr::NumberLiteral { .. }
+            | Expr::IntLiteral { .. }
+            | Expr::ListLiteral { .. } => ExprFamily::Literal,
+            Expr::SymbolReference { .. }
+            | Expr::ImplicitVariable
+            | Expr::FeatureCall { .. }
+            | Expr::DeepFeatureCall { .. } => ExprFamily::Path,
+            Expr::ArithmeticOperation { .. } => ExprFamily::Arithmetic,
+            Expr::LogicalOperation { .. } => ExprFamily::Logical,
+            Expr::EqualityOperation { .. }
+            | Expr::ComparisonOperation { .. }
+            | Expr::ContainsExpression { .. }
+            | Expr::DisjointExpression { .. }
+            | Expr::DefaultOperation { .. } => ExprFamily::Comparison,
+            Expr::OnlyExistsExpression { .. }
+            | Expr::ExistsExpression { .. }
+            | Expr::AbsentExpression { .. } => ExprFamily::Quantifier,
+            Expr::JoinOperation { .. }
+            | Expr::OnlyElement { .. }
+            | Expr::CountOperation { .. }
+            | Expr::FlattenOperation { .. }
+            | Expr::DistinctOperation { .. }
+            | Expr::ReverseOperation { .. }
+            | Expr::FirstOperation { .. }
+            | Expr::LastOperation { .. }
+            | Expr::SumOperation { .. } => ExprFamily::ListOp,
+            Expr::ThenOperation { .. }
+            | Expr::FilterOperation { .. }
+            | Expr::MapOperation { .. }
+            | Expr::ReduceOperation { .. }
+            | Expr::SortOperation { .. }
+            | Expr::MinOperation { .. }
+            | Expr::MaxOperation { .. } => ExprFamily::FunctionOp,
+            Expr::AsKeyOperation { .. }
+            | Expr::OneOfOperation { .. }
+            | Expr::ToStringOperation { .. }
+            | Expr::ToNumberOperation { .. }
+            | Expr::ToIntOperation { .. }
+            | Expr::ToTimeOperation { .. }
+            | Expr::ToEnumOperation { .. }
+            | Expr::ToDateOperation { .. }
+            | Expr::ToDateTimeOperation { .. }
+            | Expr::ToZonedDateTimeOperation { .. }
+            | Expr::AsOperation { .. } => ExprFamily::Cast,
+            Expr::ConditionalExpression { .. } | Expr::SwitchOperation { .. } => {
+                ExprFamily::ControlFlow
+            }
+            Expr::WithMetaOperation { .. } => ExprFamily::Meta,
+            Expr::ChoiceOperation { .. } => ExprFamily::Choice,
+            Expr::ConstructorExpression { .. } => ExprFamily::Constructor,
         }
     }
 }

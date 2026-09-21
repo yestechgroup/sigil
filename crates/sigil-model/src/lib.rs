@@ -10,6 +10,7 @@ use serde::Serialize;
 use sigil_diag::Span;
 
 pub mod expr;
+mod expr_visit;
 
 /// Reference to a type by (possibly qualified) name, resolved later.
 #[derive(Debug, Clone, Default, PartialEq, Serialize)]
@@ -126,6 +127,13 @@ pub enum QualifierValue {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct DocReference {
+    /// `[docReference for <path> ...]`: the attribute-anchored path, one
+    /// entry per path step (`item` start and `->`/`->>` deep markers kept
+    /// verbatim, e.g. `["item", "->>trade->id"]`). Only present for the
+    /// `for` form, which the published 9.58.1 oracle rejects outright
+    /// (grammar drift; see docs/compatibility.md).
+    #[serde(rename = "forPath", skip_serializing_if = "Option::is_none")]
+    pub for_path: Option<Vec<String>>,
     pub body: String,
     pub corpora: Vec<String>,
     pub segments: Vec<(String, String)>,

@@ -47,7 +47,7 @@ Milestone 1 targets levels 1–2 for the model subset below.
 | basic type | `basicType number(digits int, ...)` | `RosettaBasicType` | `SemanticElement::BasicType` | yes | done |
 | record type | `recordType date { day int }` | `RosettaRecordType` | `SemanticElement::RecordType` | yes | done |
 | library function | `library function Min(x number) number` | `RosettaExternalFunction` | `SemanticElement::LibraryFunction` | yes | done |
-| doc reference | `[docReference Body Corpus "S1" ...]` | `RosettaDocReference` | `DocReference` | partly | done |
+| doc reference | `[docReference for path? Body Corpus (Seg "ref")* …]` | `RosettaDocReference` | `DocReference` (`forPath` sigil-only) | partly | done* |
 | label | `[label "text"]`, `[label for path "t"]` | `LabelAnnotation` | `LabelAnnotation` | n/a | done |
 | rule reference | `[ruleReference Rules]` / `[ruleReference empty]` | `RuleReferenceAnnotation` | `RuleReference` | target kind | done (phase 4) |
 | builtin types | `int`, `string`, `date`, `metadata`, ... | `RosettaBuiltinsService` | embedded `builtin/*.rosetta` | yes | done |
@@ -168,6 +168,17 @@ the comparison stays meaningful):
   are covered by sigil-only conformance fixtures;
 * single-letter names (`enum E:`) are rejected by the 9.58.1 grammar
   (lexer collision with an internal token);
+* `docReference for <path>` (attribute-anchored references) exists in the
+  reference grammar (main) but is rejected outright by 9.58.1: sigil
+  accepts it, parses the `for` path, and carries it in
+  `DocReference.forPath` — covered by the sigil-only
+  `conformance/model/doc-ref-for-path` fixture, and no `tests/oracle/`
+  fixture may use it;
+* within a `[docReference ...]`, the tail keywords (`rationale`,
+  `rationale_author`, `structured_provision`, `provision`,
+  `reportedField`) are Xtext keyword tokens: the corresponding constructs
+  win over the greedy `Segment "ref"` pair repetition, and a bare-string
+  segment list (`CFTC Part45 "S1" "S2"`) is a syntax error on both sides;
 * the grammar's "without left parameter" expression forms (`filter x`,
   `or x`) derive a generated implicit `item` as their missing side in the
   EMF model; sigil mirrors that (`Expr::ImplicitVariable`), so both sides
