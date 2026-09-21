@@ -12,7 +12,9 @@ Xtext scoping rules, and a canonical JSON model dump compared
 differentially against the Java implementation.
 
 See [docs/compatibility.md](docs/compatibility.md) for the concept matrix,
-milestones and diagnostic codes.
+milestones and diagnostic codes. Embedding the crates as a library (e.g.
+pinned by git rev)? See [docs/api-stability.md](docs/api-stability.md) for
+the compatibility boundary and pinning expectations.
 
 ## Status
 

@@ -166,9 +166,11 @@ impl Resolution {
     }
 
     /// All elements of `kind`, as `(id, element)` pairs ordered by
-    /// [`ElementId`] (i.e. declaration order). Includes builtins; use
-    /// [`Resolution::user_files`] bounds or filter by `id.0 >= 2` scope to
-    /// exclude them — the builtin prefix is always exactly two files.
+    /// [`ElementId`] (i.e. declaration order). Includes builtins; to
+    /// exclude them, keep only ids whose file falls outside
+    /// [`Resolution::user_files`] — the builtin prefix is always exactly
+    /// two files (flat file indices 0-1), but element ids start after the
+    /// entire builtin element count, not at 2.
     pub fn elements_of_kind(&self, kind: ElementKind) -> Vec<(ElementId, &SemanticElement)> {
         (0..self.element_names.len())
             .map(ElementId)
