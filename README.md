@@ -60,6 +60,39 @@ cargo test                      # unit + conformance corpus
 UPDATE_EXPECT=1 cargo test -p sigil-cli --test conformance   # regenerate fixtures
 ```
 
+## Benchmarks
+
+```sh
+cargo bench
+```
+
+Criterion benchmarks covering the pipeline stages (`parse`, `lower`,
+`resolve`, and the full `model` pipeline — parse + lower + resolve +
+canonical JSON, i.e. what `sigil model` does) and the language server's
+full-workspace reanalysis path (one `didChange` → re-parse + re-resolve of
+every document; see [docs/lsp.md](docs/lsp.md)). Inputs: the vendored
+rune-dsl "hero model" (`crates/sigil-cli/benches/data/hero-model/`) and a
+synthetic generated 7.3k-line model
+(`crates/sigil-cli/benches/data/synthetic/`).
+
+Baseline medians from one development machine (Intel Xeon Gold 6140,
+Linux, rustc 1.98) — absolute numbers are hardware- and load-dependent;
+treat them as an order-of-magnitude reference only. CI runs benchmarks
+non-blocking with a reduced sample size, purely for regression eyeballing.
+
+| Benchmark | Input | Median |
+| --- | --- | --- |
+| `hero_model/parse` | 2 files, 158 lines | ~15 ms |
+| `hero_model/lower` | 2 files | ~31 µs |
+| `hero_model/resolve` | 2 files + builtin library | ~11 ms |
+| `hero_model/model` | 2 files, full pipeline | ~30 ms |
+| `synthetic_large/parse` | 1 file, 7,326 lines | ~110 ms |
+| `synthetic_large/lower` | 1 file | ~1.4 ms |
+| `synthetic_large/resolve` | 1 file + builtin library | ~23 ms |
+| `synthetic_large/model` | 1 file, full pipeline | ~192 ms |
+| `lsp_did_change_reanalysis/2_files` | 2 files, ~260 lines | ~20 ms |
+| `lsp_did_change_reanalysis/12_files` | 12 files, ~1,460 lines | ~90 ms |
+
 ## Oracle (differential testing)
 
 Requires a JDK (21) and Maven. The dumper loads `.rosetta` files with the

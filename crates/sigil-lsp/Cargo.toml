@@ -18,4 +18,9 @@ sigil-model = { workspace = true }
 sigil-resolve = { workspace = true }
 
 [dev-dependencies]
+criterion = { workspace = true }
 proptest = "1"
+
+[[bench]]
+name = "reanalysis"
+harness = false

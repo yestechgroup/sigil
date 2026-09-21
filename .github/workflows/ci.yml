@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
@@ -71,3 +72,17 @@ jobs:
             echo "::endgroup::"
           done
           echo "All ${#fixtures[@]} oracle fixture(s) compared successfully."
+
+  bench:
+    name: cargo bench (non-blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - name: Run benchmarks (reduced sample size)
+        run: cargo bench --workspace -- --sample-size 10 --warm-up-time 1 --measurement-time 2

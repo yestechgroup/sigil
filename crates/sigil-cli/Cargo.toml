@@ -16,3 +16,10 @@ sigil-syntax = { workspace = true }
 sigil-model = { workspace = true }
 sigil-resolve = { workspace = true }
 serde_json = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+
+[[bench]]
+name = "pipeline"
+harness = false

@@ -1,0 +1,92 @@
+namespace bench.ws.core
+
+enum WsEnum00: <"workspace enum 0">
+    V0
+    V1
+    V2
+    V3
+    V4
+    V5
+    V6
+    V7
+
+enum WsEnum01: <"workspace enum 1">
+    V0
+    V1
+    V2
+    V3
+    V4
+    V5
+    V6
+    V7
+
+enum WsEnum02: <"workspace enum 2">
+    V0
+    V1
+    V2
+    V3
+    V4
+    V5
+    V6
+    V7
+
+type WsBase00: <"workspace base type 0">
+    b0 string (1..1) <"b0 of 0">
+    b1 number (1..1) <"b1 of 0">
+    b2 boolean (0..1) <"b2 of 0">
+    b3 WsEnum00 (0..*) <"b3 of 0">
+
+type WsBase01: <"workspace base type 1">
+    b0 string (1..1) <"b0 of 1">
+    b1 number (1..1) <"b1 of 1">
+    b2 boolean (0..1) <"b2 of 1">
+    b3 WsEnum01 (0..*) <"b3 of 1">
+
+type WsBase02: <"workspace base type 2">
+    b0 string (1..1) <"b0 of 2">
+    b1 number (1..1) <"b1 of 2">
+    b2 boolean (0..1) <"b2 of 2">
+    b3 WsEnum02 (0..*) <"b3 of 2">
+
+type WsBase03: <"workspace base type 3">
+    b0 string (1..1) <"b0 of 3">
+    b1 number (1..1) <"b1 of 3">
+    b2 boolean (0..1) <"b2 of 3">
+    b3 WsEnum00 (0..*) <"b3 of 3">
+
+type WsBase04: <"workspace base type 4">
+    b0 string (1..1) <"b0 of 4">
+    b1 number (1..1) <"b1 of 4">
+    b2 boolean (0..1) <"b2 of 4">
+    b3 WsEnum01 (0..*) <"b3 of 4">
+
+type WsBase05: <"workspace base type 5">
+    b0 string (1..1) <"b0 of 5">
+    b1 number (1..1) <"b1 of 5">
+    b2 boolean (0..1) <"b2 of 5">
+    b3 WsEnum02 (0..*) <"b3 of 5">
+
+type WsBase06: <"workspace base type 6">
+    b0 string (1..1) <"b0 of 6">
+    b1 number (1..1) <"b1 of 6">
+    b2 boolean (0..1) <"b2 of 6">
+    b3 WsEnum00 (0..*) <"b3 of 6">
+
+type WsBase07: <"workspace base type 7">
+    b0 string (1..1) <"b0 of 7">
+    b1 number (1..1) <"b1 of 7">
+    b2 boolean (0..1) <"b2 of 7">
+    b3 WsEnum01 (0..*) <"b3 of 7">
+
+type WsBase08: <"workspace base type 8">
+    b0 string (1..1) <"b0 of 8">
+    b1 number (1..1) <"b1 of 8">
+    b2 boolean (0..1) <"b2 of 8">
+    b3 WsEnum02 (0..*) <"b3 of 8">
+
+type WsBase09: <"workspace base type 9">
+    b0 string (1..1) <"b0 of 9">
+    b1 number (1..1) <"b1 of 9">
+    b2 boolean (0..1) <"b2 of 9">
+    b3 WsEnum00 (0..*) <"b3 of 9">
+

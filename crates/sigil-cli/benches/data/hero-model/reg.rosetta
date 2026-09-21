@@ -1,0 +1,128 @@
+namespace "test.reg"
+version "test"
+
+body Authority Shield <"Strategic Homeland Intervention, Enforcement and Logistics Division">
+
+corpus Act "Avengers Initiative" Avengers <"The Avengers Initiative (a.k.a Phase 1; originally conceptualized as the Protector Initiative) was a secret project created by S.H.I.E.L.D. to create the Avengers, a response team comprised of the most able individuals humankind has to offer. The Initiative will defend Earth from imminent global threats that are beyond the warfighting capability of conventional military forces. ">
+
+corpus Regulations "Sokovia Accords" SokoviaAccords <"The Sokovia Accords are a set of legal documents designed to regulate the activities of enhanced individuals, specifically those who work for either government agencies such as S.H.I.E.L.D. or for private organizations such as the Avengers">
+
+segment section
+segment field
+
+report Shield Avengers SokoviaAccords in real-time
+    from Person
+    when HasSuperPowers
+    with type SokoviaAccordsReport
+
+type SokoviaAccordsReport:
+    heroName string (1..1) <"Basic type - string">
+        [label "Hero Name"]
+        [ruleReference HeroName]
+    dateOfBirth date (1..1) <"Basic type - date">
+        [label "Date of Birth"]
+        [ruleReference DateOfBirth]
+    nationality CountryEnum (1..1) <"Enum type">
+        [label "Nationality"]
+        [ruleReference Nationality]
+    hasSpecialAbilities boolean (1..1) <"Basic type - boolean">
+        [label "Has Special Abilities"]
+        [ruleReference SpecialAbilities]
+    powers PowerEnum (0..*) <"Enum type - multi cardinality">
+        [label "Powers"]
+        [ruleReference Powers]
+    attribute AttributeReport (0..1)  <"Nested report">
+    organisations OrganisationReport (0..*) <"Repeatable rule">
+        [label "Hero Organisations"]
+        [ruleReference HeroOrganisations]
+    notModelled string (1..1) <"Not modelled">
+        [label "Not Modelled"]
+        [ruleReference NotModelled]
+
+type AttributeReport:
+    heroInt int (1..1) <"Basic type - int">
+        [label "Attribute - Int"]
+        [ruleReference AttributeInt]
+    heroNumber number (1..1) <"Basic type - number">
+        [label "Attribute - Number"]
+        [ruleReference AttributeNumber]
+    heroTime time (1..1) <"Basic type - time">
+        [label "Attribute - Time"]
+        [ruleReference AttributeTime]
+    heroZonedDateTime zonedDateTime (1..1) <"Record type - zonedDateTime">
+        [label "Attribute - ZonedDateTime"]
+        [ruleReference AttributeZonedDateTime]
+
+type OrganisationReport: <"Repeated rule">
+    name string (1..1)
+        [label "Organisation Name"]
+        [ruleReference OrganisationName]
+    isGovernmentAgency boolean (1..1)
+        [label "Is Government Agency"]
+        [ruleReference IsGovernmentAgency]
+    country CountryEnum (1..1)
+        [label "Organisation Country"]
+        [ruleReference OrganisationCountry]
+
+eligibility rule HasSuperPowers from Person:
+     filter hasSpecialAbilities
+
+reporting rule HeroName from Person: <"Name">
+    [docReference Shield Avengers SokoviaAccords section "1" field "1" provision "Hero Name."]
+    extract name
+
+reporting rule DateOfBirth from Person: <"Date of birth">
+    [docReference Shield Avengers SokoviaAccords section "1" field "2" provision "Date of birth."]
+    extract dateOfBirth
+
+reporting rule Nationality from Person: <"Nationality">
+    [docReference Shield Avengers SokoviaAccords section "1" field "2" provision "Nationality."]
+    extract nationality
+
+reporting rule SpecialAbilities from Person: <"Has Special Abilities">
+    [docReference Shield Avengers SokoviaAccords section "1" field "3" provision "Has Special Abilities"]
+    extract hasSpecialAbilities
+
+reporting rule Powers from Person: <"Super Power Name">
+    [docReference Shield Avengers SokoviaAccords section "1" field "4"  provision "Powers."]
+    extract powers
+
+reporting rule AttributeInt from Person: <"Attribute - Int">
+    [docReference Shield Avengers SokoviaAccords section "1" field "5"  provision "Attribute - Int."]
+    extract attribute -> heroInt
+
+reporting rule AttributeNumber from Person: <"Attribute - Number">
+    [docReference Shield Avengers SokoviaAccords section "1" field "6"  provision "Attribute - Number."]
+    extract attribute -> heroNumber
+
+reporting rule AttributeZonedDateTime from Person: <"Attribute - ZonedDateTime">
+    [docReference Shield Avengers SokoviaAccords section "1" field "7"  provision "Attribute - ZonedDateTime."]
+    extract attribute -> heroZonedDateTime
+
+reporting rule AttributeTime from Person: <"Attribute - Time">
+    [docReference Shield Avengers SokoviaAccords section "1" field "8"  provision "Attribute - Time."]
+    extract attribute -> heroTime
+
+reporting rule HeroOrganisations from Person: <"Has Special Abilities">
+    [docReference Shield Avengers SokoviaAccords section "1" field "9"  provision "."]
+    extract organisations then extract OrganisationReport {
+        name: OrganisationName,
+        country: OrganisationCountry,
+        isGovernmentAgency: IsGovernmentAgency
+    }
+
+reporting rule OrganisationName from Organisation: <"Organisation Name">
+    [docReference Shield Avengers SokoviaAccords section "1" field "10"  provision "."]
+    extract name
+
+reporting rule OrganisationCountry from Organisation: <"Organisation Country">
+    [docReference Shield Avengers SokoviaAccords section "1" field "11"  provision "."]
+    extract country
+
+reporting rule IsGovernmentAgency from Organisation: <"Is Government Agency">
+    [docReference Shield Avengers SokoviaAccords section "1" field "12"  provision "."]
+    extract isGovernmentAgency
+
+reporting rule NotModelled from Person: <"Not Modelled">
+    [docReference Shield Avengers SokoviaAccords section "1" field "13"  provision "Not Modelled."]
+    "Not modelled"

@@ -1,0 +1,105 @@
+namespace bench.ws.mod02
+
+import bench.ws.core.*
+import bench.ws.mod01.*
+
+type Mod02Type00: <"module 2 type 0">
+    m0 string (1..1) <"m0 of 0">
+    m1 number (1..1) <"m1 of 0">
+    m2 WsBase00 (1..1) <"m2 of 0">
+    m3 Mod01Type03 (0..1) <"m3 of 0">
+    m4 WsEnum00 (0..*) <"m4 of 0">
+
+type Mod02Type01: <"module 2 type 1">
+    m0 string (1..1) <"m0 of 1">
+    m1 number (1..1) <"m1 of 1">
+    m2 WsBase01 (1..1) <"m2 of 1">
+    m3 Mod01Type04 (0..1) <"m3 of 1">
+    m4 WsEnum01 (0..*) <"m4 of 1">
+
+type Mod02Type02: <"module 2 type 2">
+    m0 string (1..1) <"m0 of 2">
+    m1 number (1..1) <"m1 of 2">
+    m2 WsBase02 (1..1) <"m2 of 2">
+    m3 Mod01Type05 (0..1) <"m3 of 2">
+    m4 WsEnum02 (0..*) <"m4 of 2">
+
+type Mod02Type03: <"module 2 type 3">
+    m0 string (1..1) <"m0 of 3">
+    m1 number (1..1) <"m1 of 3">
+    m2 WsBase03 (1..1) <"m2 of 3">
+    m3 Mod01Type06 (0..1) <"m3 of 3">
+    m4 WsEnum00 (0..*) <"m4 of 3">
+
+type Mod02Type04: <"module 2 type 4">
+    m0 string (1..1) <"m0 of 4">
+    m1 number (1..1) <"m1 of 4">
+    m2 WsBase04 (1..1) <"m2 of 4">
+    m3 Mod01Type07 (0..1) <"m3 of 4">
+    m4 WsEnum01 (0..*) <"m4 of 4">
+
+type Mod02Type05: <"module 2 type 5">
+    m0 string (1..1) <"m0 of 5">
+    m1 number (1..1) <"m1 of 5">
+    m2 WsBase05 (1..1) <"m2 of 5">
+    m3 Mod01Type00 (0..1) <"m3 of 5">
+    m4 WsEnum02 (0..*) <"m4 of 5">
+
+type Mod02Type06: <"module 2 type 6">
+    m0 string (1..1) <"m0 of 6">
+    m1 number (1..1) <"m1 of 6">
+    m2 WsBase06 (1..1) <"m2 of 6">
+    m3 Mod01Type01 (0..1) <"m3 of 6">
+    m4 WsEnum00 (0..*) <"m4 of 6">
+
+type Mod02Type07: <"module 2 type 7">
+    m0 string (1..1) <"m0 of 7">
+    m1 number (1..1) <"m1 of 7">
+    m2 WsBase07 (1..1) <"m2 of 7">
+    m3 Mod01Type02 (0..1) <"m3 of 7">
+    m4 WsEnum01 (0..*) <"m4 of 7">
+
+func Mod02Func00: <"module 2 func 0">
+    inputs:
+        t Mod02Type00 (1..1)
+    output:
+        result number (1..1)
+    set result:
+        t -> m1 * 3.0
+
+func Mod02Func01: <"module 2 func 1">
+    inputs:
+        t Mod02Type01 (1..1)
+    output:
+        result number (1..1)
+    set result:
+        t -> m1 * 3.0
+
+func Mod02Func02: <"module 2 func 2">
+    inputs:
+        t Mod02Type02 (1..1)
+    output:
+        result number (1..1)
+    set result:
+        t -> m1 * 3.0
+
+func Mod02Func03: <"module 2 func 3">
+    inputs:
+        t Mod02Type03 (1..1)
+    output:
+        result number (1..1)
+    set result:
+        t -> m1 * 3.0
+
+reporting rule Mod02Rule00 from Mod02Type00:
+    m1 > 100.0 and m2 -> b1 exists
+
+reporting rule Mod02Rule01 from Mod02Type01:
+    m1 > 101.0 and m2 -> b1 exists
+
+reporting rule Mod02Rule02 from Mod02Type02:
+    m1 > 102.0 and m2 -> b1 exists
+
+reporting rule Mod02Rule03 from Mod02Type03:
+    m1 > 103.0 and m2 -> b1 exists
+

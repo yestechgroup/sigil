@@ -1,0 +1,105 @@
+namespace bench.ws.mod09
+
+import bench.ws.core.*
+import bench.ws.mod08.*
+
+type Mod09Type00: <"module 9 type 0">
+    m0 string (1..1) <"m0 of 0">
+    m1 number (1..1) <"m1 of 0">
+    m2 WsBase00 (1..1) <"m2 of 0">
+    m3 Mod08Type03 (0..1) <"m3 of 0">
+    m4 WsEnum00 (0..*) <"m4 of 0">
+
+type Mod09Type01: <"module 9 type 1">
+    m0 string (1..1) <"m0 of 1">
+    m1 number (1..1) <"m1 of 1">
+    m2 WsBase01 (1..1) <"m2 of 1">
+    m3 Mod08Type04 (0..1) <"m3 of 1">
+    m4 WsEnum01 (0..*) <"m4 of 1">
+
+type Mod09Type02: <"module 9 type 2">
+    m0 string (1..1) <"m0 of 2">
+    m1 number (1..1) <"m1 of 2">
+    m2 WsBase02 (1..1) <"m2 of 2">
+    m3 Mod08Type05 (0..1) <"m3 of 2">
+    m4 WsEnum02 (0..*) <"m4 of 2">
+
+type Mod09Type03: <"module 9 type 3">
+    m0 string (1..1) <"m0 of 3">
+    m1 number (1..1) <"m1 of 3">
+    m2 WsBase03 (1..1) <"m2 of 3">
+    m3 Mod08Type06 (0..1) <"m3 of 3">
+    m4 WsEnum00 (0..*) <"m4 of 3">
+
+type Mod09Type04: <"module 9 type 4">
+    m0 string (1..1) <"m0 of 4">
+    m1 number (1..1) <"m1 of 4">
+    m2 WsBase04 (1..1) <"m2 of 4">
+    m3 Mod08Type07 (0..1) <"m3 of 4">
+    m4 WsEnum01 (0..*) <"m4 of 4">
+
+type Mod09Type05: <"module 9 type 5">
+    m0 string (1..1) <"m0 of 5">
+    m1 number (1..1) <"m1 of 5">
+    m2 WsBase05 (1..1) <"m2 of 5">
+    m3 Mod08Type00 (0..1) <"m3 of 5">
+    m4 WsEnum02 (0..*) <"m4 of 5">
+
+type Mod09Type06: <"module 9 type 6">
+    m0 string (1..1) <"m0 of 6">
+    m1 number (1..1) <"m1 of 6">
+    m2 WsBase06 (1..1) <"m2 of 6">
+    m3 Mod08Type01 (0..1) <"m3 of 6">
+    m4 WsEnum00 (0..*) <"m4 of 6">
+
+type Mod09Type07: <"module 9 type 7">
+    m0 string (1..1) <"m0 of 7">
+    m1 number (1..1) <"m1 of 7">
+    m2 WsBase07 (1..1) <"m2 of 7">
+    m3 Mod08Type02 (0..1) <"m3 of 7">
+    m4 WsEnum01 (0..*) <"m4 of 7">
+
+func Mod09Func00: <"module 9 func 0">
+    inputs:
+        t Mod09Type00 (1..1)
+    output:
+        result number (1..1)
+    set result:
+        t -> m1 * 3.0
+
+func Mod09Func01: <"module 9 func 1">
+    inputs:
+        t Mod09Type01 (1..1)
+    output:
+        result number (1..1)
+    set result:
+        t -> m1 * 3.0
+
+func Mod09Func02: <"module 9 func 2">
+    inputs:
+        t Mod09Type02 (1..1)
+    output:
+        result number (1..1)
+    set result:
+        t -> m1 * 3.0
+
+func Mod09Func03: <"module 9 func 3">
+    inputs:
+        t Mod09Type03 (1..1)
+    output:
+        result number (1..1)
+    set result:
+        t -> m1 * 3.0
+
+reporting rule Mod09Rule00 from Mod09Type00:
+    m1 > 100.0 and m2 -> b1 exists
+
+reporting rule Mod09Rule01 from Mod09Type01:
+    m1 > 101.0 and m2 -> b1 exists
+
+reporting rule Mod09Rule02 from Mod09Type02:
+    m1 > 102.0 and m2 -> b1 exists
+
+reporting rule Mod09Rule03 from Mod09Type03:
+    m1 > 103.0 and m2 -> b1 exists
+
