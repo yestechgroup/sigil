@@ -10,6 +10,7 @@ use serde::Serialize;
 use sigil_diag::Span;
 
 pub mod expr;
+mod expr_visit;
 
 /// Reference to a type by (possibly qualified) name, resolved later.
 #[derive(Debug, Clone, Default, PartialEq, Serialize)]
