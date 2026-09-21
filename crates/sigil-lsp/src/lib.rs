@@ -12,6 +12,7 @@ pub mod dispatch;
 pub mod document;
 pub mod features;
 pub mod position;
+pub mod semantic_tokens;
 pub mod world;
 
 pub use analysis::Analysis;

@@ -43,6 +43,7 @@ pub fn server_capabilities(encoding: PositionEncoding) -> ServerCapabilities {
         references_provider: Some(OneOf::Left(true)),
         rename_provider: Some(OneOf::Left(true)),
         workspace_symbol_provider: Some(OneOf::Left(true)),
+        semantic_tokens_provider: Some(crate::semantic_tokens::server_capability()),
         ..ServerCapabilities::default()
     }
 }
@@ -220,6 +221,14 @@ fn on_request(connection: &Connection, world: &World, req: Request) {
             req.params,
             |params: lsp_types::WorkspaceSymbolParams| {
                 serde_json::to_value(features::workspace_symbols(world, &params.query))
+            },
+        ),
+        lsp_types::request::SemanticTokensFullRequest::METHOD => handle(
+            req.id,
+            req.params,
+            |params: lsp_types::SemanticTokensParams| {
+                let uri = params.text_document.uri.to_string();
+                serde_json::to_value(crate::semantic_tokens::semantic_tokens(world, &uri))
             },
         ),
         _ => Response::new_err(

@@ -57,7 +57,7 @@ fn trim_span_end(text: &str, span: Span) -> Span {
 /// `number`, `a.b.^enum` -> `a.b.^enum`. The reference's `name` is the
 /// *unescaped* qualified name, so the region is re-derived from the text
 /// rather than from `name.len()`.
-fn type_ref_name_span(r: &TypeRef, text: &str) -> Span {
+pub(crate) fn type_ref_name_span(r: &TypeRef, text: &str) -> Span {
     let end = r.span.end.min(text.len());
     let bytes = text.as_bytes();
     let ident = |c: u8| c.is_ascii_alphanumeric() || c == b'_';
@@ -90,7 +90,7 @@ fn range_of(doc: &Document, span: Span, enc: PositionEncoding) -> lsp_types::Ran
     doc.range(span, enc)
 }
 
-fn parse_unit(uri: &str, text: &str) -> Option<SourceUnit> {
+pub(crate) fn parse_unit(uri: &str, text: &str) -> Option<SourceUnit> {
     let source = sigil_diag::SourceFile::new(uri, text.to_string());
     sigil_syntax::parse(&source).0
 }
@@ -1256,7 +1256,7 @@ pub fn references(
 /// the grammar's `ValidID` rule explicitly re-allows (`condition`,
 /// `source`, `version`, `scope`, `ingest`, `enrich`, `projection`) are
 /// *not* listed here — they are legal names.
-const RUNE_KEYWORDS: &[&str] = &[
+pub(crate) const RUNE_KEYWORDS: &[&str] = &[
     "absent",
     "add",
     "alias",
