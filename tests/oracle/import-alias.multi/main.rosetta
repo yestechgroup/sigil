@@ -1,0 +1,15 @@
+namespace oracle.multi.aliasmain
+
+// Alias-qualified use only: in the 9.58.1 oracle an import alias acts as a
+// namespace prefix (`dep.Product` -> `oracle.multi.aliasdep.Product`), it is
+// not a standalone symbol (a bare `Product`/`dep` reference resolves there
+// only through the plain wildcard import below).
+import oracle.multi.aliasdep.* as dep
+import oracle.multi.aliasdep2.*
+import oracle.multi.aliasdep.Service
+
+type Contract:
+	product dep.Product (1..1)
+	service Service (0..1)
+	service2 dep.Service (0..1)
+	rider Rider (0..1)

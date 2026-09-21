@@ -1,0 +1,7 @@
+namespace oracle.multi.shared
+
+type Beta extends Alpha:
+	extra string (0..1)
+
+type Gamma:
+	alpha Alpha (1..1)

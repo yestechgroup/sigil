@@ -1,0 +1,11 @@
+namespace oracle.multi.bdep
+
+// A user type that shadows the builtin `date` in this namespace.
+type date: <"user shadow of the builtin date">
+	day number (1..1)
+
+type Wrapper:
+	whenStamp date (1..1)
+	moment zonedDateTime (0..1)
+	flag boolean (0..1)
+	totalCount int (1..1)

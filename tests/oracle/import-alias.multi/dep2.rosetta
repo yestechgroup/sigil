@@ -1,0 +1,6 @@
+namespace oracle.multi.aliasdep2
+
+import oracle.multi.aliasdep.Product
+
+type Rider:
+	product Product (1..1)

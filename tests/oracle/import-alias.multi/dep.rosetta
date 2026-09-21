@@ -1,0 +1,7 @@
+namespace oracle.multi.aliasdep
+
+type Product:
+	productId string (1..1)
+
+type Service:
+	product Product (1..1)

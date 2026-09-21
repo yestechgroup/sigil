@@ -1,0 +1,16 @@
+namespace oracle.multi.main
+
+// wildcard imports of two user-file namespaces plus the builtin metafields
+// namespace; all imported simple names are distinct, so no import is
+// ambiguous (an ambiguous import resolves to nothing in the 9.58.1 oracle).
+import oracle.multi.dep.*
+import oracle.multi.dep2.*
+import com.rosetta.model.metafields.*
+
+type Trade:
+	party Party (1..1)
+	entity LegalEntity (0..1)
+	product Product (1..1)
+	instrument Instrument (0..1)
+	tradeDate date (1..1)
+	quantity number (1..1)

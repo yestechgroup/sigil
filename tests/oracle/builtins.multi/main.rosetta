@@ -1,0 +1,17 @@
+namespace oracle.multi.bmain
+
+// `date` here resolves through the import above (beating the implicit
+// `com.rosetta.model` wildcard); `boolean`, `int`, `string`, `number`,
+// `zonedDateTime` and the `metadata` annotation resolve as builtins.
+import oracle.multi.bdep.*
+
+type Deal:
+	[metadata id]
+	dealId string (1..1)
+	shadowedDate date (1..1)
+	realBoolean boolean (0..1)
+	amount number(digits: 30) (0..1)
+	name string (1..1)
+	whenStamp zonedDateTime (0..1)
+	altId string (0..1)
+		[metadata scheme]

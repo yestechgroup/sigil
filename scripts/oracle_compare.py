@@ -4,8 +4,19 @@
 Usage:
     python3 scripts/oracle_compare.py <fixture.rosetta>...
 
-Both tools run on the same files; outputs are normalized (key order,
-sigil-only fields, known oracle-version differences) and compared.
+The explicitly-passed files are compared as one workspace in a single
+invocation of each tool (CI passes exactly one file per call).
+
+Multi-file groups: a directory tests/oracle/<group>.multi/ holding two or
+more .rosetta files is one cross-file scoping fixture. Every invocation
+that names a fixture under tests/oracle/ additionally sweeps all
+tests/oracle/*.multi/ groups — each group's files are passed to BOTH tools
+in a single invocation (sorted by path, so both sides see the same
+argument order; both dump `files` in argument order, which makes the
+per-group file sequence deterministic regardless of directory enumeration
+order). Because CI invokes this script once per single-file fixture, the
+multi-file groups are compared once per fixture in a CI run: redundant,
+but it keeps the workflow unchanged.
 
 Requires: JDK 21 + Maven (oracle side), a built sigil binary
 (`cargo build -p sigil-cli`), and the dumper compiled
@@ -19,6 +30,8 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 DUMPER = REPO / "tools/oracle-dumper"
+FIXTURES = REPO / "tests/oracle"
+MULTI_SUFFIX = ".multi"
 
 
 def run_sigil(files: list[str]) -> dict:
@@ -185,22 +198,45 @@ def resolve_ref(value):
     return value
 
 
-def main() -> int:
-    files = [str(Path(f).resolve()) for f in sys.argv[1:]]
-    if not files:
-        print(__doc__)
-        return 2
+def multi_groups() -> list[list[str]]:
+    """Every tests/oracle/<group>.multi/ directory as a sorted file list."""
+    groups = []
+    for group_dir in sorted(FIXTURES.glob(f"*{MULTI_SUFFIX}")):
+        if group_dir.is_dir():
+            files = sorted(str(p) for p in group_dir.glob("*.rosetta"))
+            if files:
+                groups.append(files)
+    return groups
+
+
+def compare(files: list[str]) -> bool:
     sigil_doc = normalize(run_sigil(files))
     oracle_doc = normalize(run_oracle(files))
     if sigil_doc == oracle_doc:
-        print(f"OK: sigil matches the Java oracle on {len(files)} file(s)")
-        return 0
+        names = ", ".join(Path(f).name for f in files)
+        print(f"OK: sigil matches the Java oracle on {len(files)} file(s): {names}")
+        return True
     print("MISMATCH")
     print("--- sigil ---")
     print(json.dumps(sigil_doc, indent=2, sort_keys=True))
     print("--- oracle ---")
     print(json.dumps(oracle_doc, indent=2, sort_keys=True))
-    return 1
+    return False
+
+
+def main() -> int:
+    files = [str(Path(f).resolve()) for f in sys.argv[1:]]
+    if not files:
+        print(__doc__)
+        return 2
+    ok = compare(files)
+    # CI (which always passes tests/oracle fixtures) also sweeps the
+    # multi-file groups on every invocation; ad-hoc runs outside
+    # tests/oracle/ stay single-file.
+    if any(Path(f).is_relative_to(FIXTURES) for f in files):
+        for group in multi_groups():
+            ok = compare(group) and ok
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":

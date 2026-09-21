@@ -1,0 +1,6 @@
+namespace oracle.multi.shared
+
+type Alpha: <"references forward into part2.rosetta">
+	beta Beta (1..1)
+	gamma Gamma (0..1)
+	delta Delta (0..1)

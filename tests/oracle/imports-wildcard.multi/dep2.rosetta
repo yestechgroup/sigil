@@ -1,0 +1,7 @@
+namespace oracle.multi.dep2
+
+type Product: <"a product defined in dep2">
+	productId string (1..1)
+
+type Instrument:
+	product Product (1..1)

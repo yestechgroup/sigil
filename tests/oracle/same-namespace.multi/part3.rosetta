@@ -1,0 +1,4 @@
+namespace oracle.multi.shared
+
+type Delta extends Gamma:
+	notes string (0..1)

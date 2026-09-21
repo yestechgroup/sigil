@@ -1,0 +1,9 @@
+namespace oracle.multi.dep
+version "1.0.0"
+
+type Party: <"a party defined in dep">
+	[metadata key]
+	partyId string (1..1)
+
+type LegalEntity extends Party:
+	lei string (0..1)
