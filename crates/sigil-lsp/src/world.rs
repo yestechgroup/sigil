@@ -99,10 +99,9 @@ impl World {
         let Some(root) = self.root.clone() else {
             return;
         };
-        let mut found = Vec::new();
-        collect_rosetta_files(&root, &mut found, 0);
+        let found = sigil_syntax::project::discover_rosetta_files(std::slice::from_ref(&root));
         for path in found {
-            let Some(uri) = path_to_uri(&path) else {
+            let Some(uri) = sigil_syntax::project::path_to_uri(&path) else {
                 continue;
             };
             if self.docs.contains_key(&uri) {
@@ -124,40 +123,4 @@ impl World {
     pub fn analysis(&self) -> &Analysis {
         &self.analysis
     }
-}
-
-fn collect_rosetta_files(dir: &std::path::Path, out: &mut Vec<PathBuf>, depth: usize) {
-    if depth > 16 {
-        return;
-    }
-    let Ok(entries) = std::fs::read_dir(dir) else {
-        return;
-    };
-    let mut entries: Vec<_> = entries.filter_map(Result::ok).collect();
-    entries.sort_by_key(|e| e.file_name());
-    for entry in entries {
-        let path = entry.path();
-        let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
-            continue;
-        };
-        if name.starts_with('.') || name == "target" {
-            continue;
-        }
-        if path.is_dir() {
-            collect_rosetta_files(&path, out, depth + 1);
-        } else if name.ends_with(".rosetta") {
-            out.push(path);
-        }
-    }
-}
-
-/// Best-effort `file://` URI for a path. No percent-encoding: workspace
-/// paths with spaces or non-ASCII will not round-trip (documented
-/// limitation).
-fn path_to_uri(path: &std::path::Path) -> Option<String> {
-    let text = path.to_str()?;
-    if text.starts_with("file://") {
-        return Some(text.to_string());
-    }
-    Some(format!("file://{text}"))
 }

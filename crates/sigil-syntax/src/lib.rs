@@ -8,6 +8,7 @@ pub mod ast;
 pub mod expr;
 mod lower;
 mod parser;
+pub mod project;
 
 pub use lower::{lower, lower_expression};
 
