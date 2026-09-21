@@ -8,19 +8,22 @@ Native-Rust toolchain for the FINOS **Rune DSL** (the language of `.rosetta` fil
 
 ## Commands
 
-CI (`.github/workflows/ci.yml`) runs, in this order:
+**CI on GitHub is currently non-functional (as of 2026-09-21): the repo is private and the account's Actions minutes are exhausted — jobs get SIGTERM-killed (exit 143) mid-run. Use local compute instead: run the full gate below locally before every push. Do not rely on or wait for GitHub check runs.** (Workflow file is kept healthy: concurrency cancel, bench job nightly/dispatch/PR-only.)
+
+The CI gate (`.github/workflows/ci.yml` mirrors this), in this order:
 
 ```sh
 cargo fmt --all -- --check
 cargo clippy --all-targets -- -D warnings   # warnings are errors
 cargo test --workspace                      # CI sets PROPTEST_CASES=256
+python3 scripts/oracle_compare.py tests/oracle/model-basic.rosetta   # also sweeps tests/oracle/*.multi/ groups
 ```
 
 - CLI (binary `sigil`, hand-rolled arg parsing, no clap): `cargo run -p sigil-cli -- parse|check|model <files...>`
 - Regenerate conformance fixtures: `UPDATE_EXPECT=1 cargo test -p sigil-cli --test conformance`
 - Longer property-test runs: `PROPTEST_CASES=512 cargo test -p sigil-lsp`
 
-`cargo test` does **not** include Java-oracle parity — that is a separate CI job:
+`cargo test` does **not** include Java-oracle parity on its own — the gate above runs it explicitly (any fixture invocation also sweeps the `tests/oracle/*.multi/` multi-file groups; see the script docstring):
 
 ```sh
 cargo build -p sigil-cli                            # script runs target/debug/sigil
