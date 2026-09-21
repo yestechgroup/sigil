@@ -98,6 +98,28 @@ def normalize_expression(node):
     return out
 
 
+def normalize_doc_refs(refs):
+    """Reduce doc references to the shape both sides can agree on: the
+    9.58.1 oracle keeps only `corpora` (resolved target names) and
+    `reportedField`; sigil additionally serializes segments, rationales,
+    provisions and (grammar-drift) `forPath`, and keeps corpora as
+    written. The `body` link is dropped: 9.58.1's Xtext linker cannot
+    resolve the bodyType-style reference real models write (`docReference
+    CFTC ...` vs a body declared as `body CFTC CFTCBody`), so the oracle
+    serializes `body: null` even for in-file declarations, and sigil does
+    not model the resolved link yet either."""
+    return [
+        {
+            "body": None,
+            "corpora": ref.get("corpora", []),
+            "reportedField": bool(
+                ref.get("reportedField", ref.get("reported_field", False))
+            ),
+        }
+        for ref in refs or []
+    ]
+
+
 def normalize(doc: dict) -> dict:
     """Reduce both sides to the comparable semantic shape."""
     files = [f for f in doc["files"] if not f["namespace"].startswith("com.rosetta.model")]
@@ -119,6 +141,8 @@ def normalize(doc: dict) -> dict:
                 element["input"] = normalize_expression(element["input"])
             if element.get("kind") == "Report":
                 element["inputType"] = normalize_expression(element["inputType"])
+            if "docReferences" in element:
+                element["docReferences"] = normalize_doc_refs(element["docReferences"])
             if element.get("kind") == "ExternalRuleSource":
                 # sigil keeps a full type ref for the super source and the
                 # class data; the oracle only has the resolved target.
@@ -136,8 +160,15 @@ def normalize(doc: dict) -> dict:
                 for argument in attribute["type"].get("arguments", []):
                     if isinstance(argument.get("value"), dict):
                         argument["value"] = arg_value_text(argument["value"])
+                if "docReferences" in attribute:
+                    attribute["docReferences"] = normalize_doc_refs(attribute["docReferences"])
             for condition in element.get("conditions", []):
                 condition["expression"] = normalize_expression(condition["expression"])
+                if "docReferences" in condition:
+                    condition["docReferences"] = normalize_doc_refs(condition["docReferences"])
+            for value in element.get("values", []):
+                if "docReferences" in value:
+                    value["docReferences"] = normalize_doc_refs(value["docReferences"])
         for configuration in file.get("configurations", []):
             # sigil keeps a full type ref for the root; the oracle only has
             # the resolved target.

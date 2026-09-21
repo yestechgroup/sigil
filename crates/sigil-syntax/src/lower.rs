@@ -433,6 +433,7 @@ fn lower_annotations(annos: &[crate::ast::AnnotationRef]) -> Vec<m::AnnotationRe
 fn lower_docs(docs: &[AstDocReference]) -> Vec<m::DocReference> {
     docs.iter()
         .map(|d| m::DocReference {
+            for_path: d.for_path.as_ref().map(lower_path),
             body: d.body.0.clone(),
             corpora: d.corpora.iter().map(|c| c.0.clone()).collect(),
             segments: d.segments.clone(),
@@ -449,6 +450,21 @@ fn lower_docs(docs: &[AstDocReference]) -> Vec<m::DocReference> {
             reported_field: d.reported_field,
         })
         .collect()
+}
+
+fn lower_path(path: &crate::ast::AnnotationPath) -> Vec<String> {
+    let mut steps = Vec::new();
+    if path.starts_with_item {
+        steps.push("item".to_string());
+    }
+    for segment in &path.segments {
+        if segment.deep {
+            steps.push(format!("->>{}", segment.attribute));
+        } else {
+            steps.push(segment.attribute.clone());
+        }
+    }
+    steps
 }
 
 // ---- expressions -----------------------------------------------------------
@@ -762,5 +778,46 @@ fn lower_condition(c: &crate::ast::ConditionDef) -> m::Condition {
         annotations: lower_annotations(&c.annotations),
         doc_references: lower_docs(&c.doc_references),
         span: c.span,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use sigil_diag::SourceFile;
+
+    use crate::parser::parse;
+
+    #[test]
+    fn doc_reference_for_path_is_lowered() {
+        let src = "namespace t\n\
+                   body CFTC CFTCBody <\"b\">\n\
+                   corpus CFTC Part45 <\"p\">\n\
+                   segment S1\n\
+                   type Product:\n\
+                   \tproductId string (1..1)\n\
+                   \t\t[docReference for item->>productId CFTC Part45 S1 \"S1\" rationale \"why\" provision \"p\" reportedField]\n";
+        let file = SourceFile::new("t.rosetta", src);
+        let (unit, diags) = parse(&file);
+        assert!(diags.is_empty(), "{diags:?}");
+        let model = super::lower("t.rosetta", unit.as_ref().unwrap());
+        let doc = match model
+            .elements
+            .iter()
+            .find(|e| matches!(e, sigil_model::SemanticElement::Data(_)))
+        {
+            Some(sigil_model::SemanticElement::Data(d)) => &d.attributes[0].doc_references[0],
+            other => panic!("expected data, got {other:?}"),
+        };
+        assert_eq!(
+            doc.for_path.as_ref().unwrap(),
+            &vec!["item".to_string(), "->>productId".to_string()],
+        );
+        assert_eq!(doc.body, "CFTC");
+        assert_eq!(doc.corpora, vec!["Part45"]);
+        assert_eq!(doc.segments, vec![("S1".to_string(), "S1".to_string())]);
+        assert_eq!(doc.rationales.len(), 1);
+        assert_eq!(doc.rationales[0].rationale.as_deref(), Some("why"));
+        assert_eq!(doc.provision.as_deref(), Some("p"));
+        assert!(doc.reported_field);
     }
 }

@@ -370,10 +370,10 @@ pub fn annotation_path<'src>() -> impl Parser<'src, &'src str, AnnotationPath, A
         .then(name())
         .map(|(deep, attribute)| AnnotationPathSegment { attribute, deep });
     kw("item")
-        .to(())
-        .map(|_| AnnotationPath {
+        .ignore_then(segment.clone().repeated().collect::<Vec<_>>())
+        .map(|segments| AnnotationPath {
             starts_with_item: true,
-            segments: Vec::new(),
+            segments,
         })
         .or(name()
             .then(segment.repeated().collect::<Vec<_>>())
@@ -457,10 +457,43 @@ fn document_rationale<'src>() -> impl Parser<'src, &'src str, DocumentRationale,
             }))
 }
 
+/// Keywords that continue a `[docReference ...]` after the body/corpus/
+/// segment reference lists. Xtext lexes them as keyword tokens, so they can
+/// never satisfy a `QualifiedName` in the reference lists; the keyword
+/// alternatives must win over the greedy pair repetition.
+const DOC_REFERENCE_KEYWORDS: &[&str] = &[
+    "rationale",
+    "rationale_author",
+    "structured_provision",
+    "provision",
+    "reportedField",
+];
+
+fn doc_ref_name<'src>() -> impl Parser<'src, &'src str, String, AErr<'src>> + Clone {
+    name()
+        .try_map(|text: String, span| {
+            if DOC_REFERENCE_KEYWORDS.contains(&text.as_str()) {
+                Err(Rich::custom(span, "doc reference"))
+            } else {
+                Ok(text)
+            }
+        })
+        .labelled("doc reference")
+}
+
+fn doc_ref_qname<'src>() -> impl Parser<'src, &'src str, QName, AErr<'src>> + Clone {
+    doc_ref_name()
+        .separated_by(sym("."))
+        .at_least(1)
+        .collect::<Vec<String>>()
+        .map(|parts| QName(parts.join(".")))
+        .labelled("qualified name")
+}
+
 /// `[docReference for path Body Corpus (Segment "ref")* ...]`
 pub fn doc_reference<'src>() -> impl Parser<'src, &'src str, DocReference, AErr<'src>> + Clone {
     let for_clause = kw("for").ignore_then(annotation_path()).or_not();
-    let item = qname().then(string_lit().or_not());
+    let item = doc_ref_qname().then(string_lit().or_not());
     let structured = kw("structured_provision")
         .ignore_then(string_lit())
         .or_not();
@@ -1903,5 +1936,102 @@ rule source MySource {
         let file = SourceFile::new("t.rosetta", "namespace t\ntype Broken\n");
         let (_, diags) = parse(&file);
         assert!(!diags.is_empty());
+    }
+
+    #[test]
+    fn parses_doc_reference_pair_segments_with_tail_keywords() {
+        let unit = parse_ok(
+            "namespace t\n\
+             body CFTC CFTCBody <\"b\">\n\
+             corpus CFTC Part45 <\"p\">\n\
+             segment S1\n\
+             segment S2\n\
+             type Product:\n\
+             \t[docReference CFTC Part45 S1 \"r1\" S2 \"r2\" rationale \"why\" provision \"prov text\" reportedField]\n\
+             \t[docReference CFTC Part45 rationale_author \"me\" rationale \"why\"]\n\
+             \tproductId string (1..1)\n",
+        );
+        let data = match &unit.elements[4] {
+            Element::Data(d) => d,
+            other => panic!("expected data, got {other:?}"),
+        };
+        let doc = &data.doc_references[0];
+        assert_eq!(doc.body.0, "CFTC");
+        assert_eq!(
+            doc.corpora.iter().map(|c| c.0.clone()).collect::<Vec<_>>(),
+            vec!["Part45"]
+        );
+        assert_eq!(
+            doc.segments,
+            vec![
+                ("S1".to_string(), "r1".to_string()),
+                ("S2".to_string(), "r2".to_string()),
+            ]
+        );
+        assert_eq!(doc.rationales.len(), 1);
+        assert_eq!(doc.rationales[0].rationale.as_deref(), Some("why"));
+        assert_eq!(doc.rationales[0].rationale_author, None);
+        assert_eq!(doc.structured_provision, None);
+        assert_eq!(doc.provision.as_deref(), Some("prov text"));
+        assert!(doc.reported_field);
+
+        let doc = &data.doc_references[1];
+        assert_eq!(
+            doc.segments,
+            Vec::<(String, String)>::new(),
+            "tail keywords must not be eaten as segment pairs"
+        );
+        assert_eq!(doc.rationales.len(), 1);
+        assert_eq!(doc.rationales[0].rationale.as_deref(), Some("why"));
+        assert_eq!(doc.rationales[0].rationale_author.as_deref(), Some("me"));
+        assert!(!doc.reported_field);
+    }
+
+    #[test]
+    fn doc_reference_bare_string_segments_fail_to_parse() {
+        let file = SourceFile::new(
+            "t.rosetta",
+            "namespace t\n\
+             body CFTC CFTCBody <\"b\">\n\
+             corpus CFTC Part45 <\"p\">\n\
+             segment S1\n\
+             segment S2\n\
+             type Product:\n\
+             \t[docReference CFTC Part45 \"S1\" \"S2\"]\n\
+             \tproductId string (1..1)\n",
+        );
+        let (_, diags) = parse(&file);
+        assert!(
+            diags.iter().any(|d| d.code == "E0001"),
+            "bare-string segments must stay a syntax error (oracle-correct): {diags:?}"
+        );
+    }
+
+    #[test]
+    fn parses_doc_reference_for_path() {
+        let unit = parse_ok(
+            "namespace t\n\
+             body CFTC CFTCBody <\"b\">\n\
+             corpus CFTC Part45 <\"p\">\n\
+             segment S1\n\
+             type Product:\n\
+             \tproductId string (1..1)\n\
+             \t\t[docReference for productId->id CFTC Part45 S1 \"S1\" reportedField]\n",
+        );
+        match &unit.elements[3] {
+            Element::Data(d) => {
+                let doc = &d.attributes[0].doc_references[0];
+                let path = doc.for_path.as_ref().unwrap();
+                assert!(!path.starts_with_item);
+                assert_eq!(path.segments.len(), 2);
+                assert_eq!(path.segments[0].attribute, "productId");
+                assert!(!path.segments[0].deep);
+                assert_eq!(path.segments[1].attribute, "id");
+                assert_eq!(doc.body.0, "CFTC");
+                assert_eq!(doc.segments, vec![("S1".to_string(), "S1".to_string())]);
+                assert!(doc.reported_field);
+            }
+            other => panic!("expected data, got {other:?}"),
+        }
     }
 }
