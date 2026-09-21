@@ -5,6 +5,13 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * *" # nightly: keeps the bench job running without burning minutes on every push
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
@@ -78,6 +85,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     continue-on-error: true
+    # Nightly/on-demand only: benches burn ~10 min of Actions minutes per
+    # push, and private-repo minutes are the binding constraint on CI.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
