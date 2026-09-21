@@ -304,6 +304,28 @@ impl TestClient {
         self.request_typed::<R>(params)
     }
 
+    /// Send a typed request and return the raw wire response, including
+    /// error responses (for negative tests).
+    pub fn request_raw<R>(&mut self, params: R::Params) -> Response
+    where
+        R: lsp_types::request::Request,
+        R::Params: serde::Serialize,
+    {
+        let id = self.next_request_id();
+        self.conn
+            .sender
+            .send(
+                Request::new(
+                    id.clone(),
+                    R::METHOD.to_string(),
+                    serde_json::to_value(params).unwrap(),
+                )
+                .into(),
+            )
+            .unwrap();
+        self.pump_until_response(&id)
+    }
+
     fn request_typed<R>(&mut self, params: R::Params) -> R::Result
     where
         R: lsp_types::request::Request,

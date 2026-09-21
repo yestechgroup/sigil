@@ -1,9 +1,11 @@
 //! Language feature implementations (documentSymbol, definition, hover,
-//! completion, references, workspace/symbol).
+//! completion, references, rename, workspace/symbol).
 //!
 //! All queries read from [`Analysis`](crate::Analysis) (the resolved model,
 //! which carries byte spans) plus the documents' line indexes for position
 //! mapping.
+
+use std::collections::HashMap;
 
 use sigil_diag::Span;
 use sigil_model::{Attribute, EnumValue, SemanticElement, TypeRef};
@@ -50,13 +52,38 @@ fn trim_span_end(text: &str, span: Span) -> Span {
     Span::new(span.start, end)
 }
 
-/// The sub-span covering just the (possibly qualified) name of a type
-/// reference: `number(digits: 30)` -> `number`.
-fn type_ref_name_span(r: &TypeRef) -> Span {
-    Span::new(
-        r.span.start,
-        (r.span.start + r.name.len()).min(r.span.end.max(r.span.start)),
-    )
+/// The sub-span covering the whole (possibly qualified, possibly
+/// `^`-escaped) name of a type reference: `number(digits: 30)` ->
+/// `number`, `a.b.^enum` -> `a.b.^enum`. The reference's `name` is the
+/// *unescaped* qualified name, so the region is re-derived from the text
+/// rather than from `name.len()`.
+fn type_ref_name_span(r: &TypeRef, text: &str) -> Span {
+    let end = r.span.end.min(text.len());
+    let bytes = text.as_bytes();
+    let ident = |c: u8| c.is_ascii_alphanumeric() || c == b'_';
+    let mut i = r.span.start.min(end);
+    if bytes.get(i) == Some(&b'^') {
+        i += 1; // caret escape: part of the token, not of the name
+    }
+    while i < end {
+        match bytes[i] {
+            c if ident(c) => i += 1,
+            b'.' => {
+                // part of the qualified name only if a segment follows
+                let mut j = i + 1;
+                if bytes.get(j) == Some(&b'^') {
+                    j += 1;
+                }
+                if bytes.get(j).is_some_and(|&c| ident(c)) {
+                    i = j;
+                } else {
+                    break;
+                }
+            }
+            _ => break,
+        }
+    }
+    Span::new(r.span.start.min(end), i)
 }
 
 fn range_of(doc: &Document, span: Span, enc: PositionEncoding) -> lsp_types::Range {
@@ -104,7 +131,7 @@ fn candidates<'a>(world: &'a World, uri: &str) -> Vec<Candidate<'a>> {
     let push_type_ref = |r: &'a TypeRef, out: &mut Vec<Candidate<'a>>| {
         out.push(Candidate {
             priority: 0,
-            span: type_ref_name_span(r),
+            span: type_ref_name_span(r, &text),
             node: Node::TypeRef(r),
         });
         out.push(Candidate {
@@ -329,7 +356,7 @@ fn attribute_candidates<'a>(
     });
     out.push(Candidate {
         priority: 0,
-        span: type_ref_name_span(&a.type_ref),
+        span: type_ref_name_span(&a.type_ref, text),
         node: Node::TypeRef(&a.type_ref),
     });
     out.push(Candidate {
@@ -885,13 +912,21 @@ fn reference_sites(world: &World) -> Vec<(String, Span, usize)> {
         if let Some(text) = text {
             for config in &file.configurations {
                 if let Some(id) = config.root.resolved {
-                    sites.push((file.name.clone(), type_ref_name_span(&config.root), id));
+                    sites.push((
+                        file.name.clone(),
+                        type_ref_name_span(&config.root, &text),
+                        id,
+                    ));
                 }
             }
             let walk_attributes = |attrs: &[Attribute], sites: &mut Vec<(String, Span, usize)>| {
                 for a in attrs {
                     if let Some(id) = a.type_ref.resolved {
-                        sites.push((file.name.clone(), type_ref_name_span(&a.type_ref), id));
+                        sites.push((
+                            file.name.clone(),
+                            type_ref_name_span(&a.type_ref, &text),
+                            id,
+                        ));
                     }
                     for anno in &a.annotations {
                         if let Some(id) = anno.annotation_resolved {
@@ -909,7 +944,7 @@ fn reference_sites(world: &World) -> Vec<(String, Span, usize)> {
                     SemanticElement::Data(d) => {
                         if let Some(s) = &d.super_type {
                             if let Some(id) = s.resolved {
-                                sites.push((file.name.clone(), type_ref_name_span(s), id));
+                                sites.push((file.name.clone(), type_ref_name_span(s, &text), id));
                             }
                         }
                         walk_attributes(&d.attributes, &mut sites);
@@ -926,7 +961,7 @@ fn reference_sites(world: &World) -> Vec<(String, Span, usize)> {
                     SemanticElement::Enumeration(e) => {
                         if let Some(s) = &e.super_type {
                             if let Some(id) = s.resolved {
-                                sites.push((file.name.clone(), type_ref_name_span(s), id));
+                                sites.push((file.name.clone(), type_ref_name_span(s, &text), id));
                             }
                         }
                         for anno in &e.annotations {
@@ -955,7 +990,11 @@ fn reference_sites(world: &World) -> Vec<(String, Span, usize)> {
                     }
                     SemanticElement::TypeAlias(t) => {
                         if let Some(id) = t.type_ref.resolved {
-                            sites.push((file.name.clone(), type_ref_name_span(&t.type_ref), id));
+                            sites.push((
+                                file.name.clone(),
+                                type_ref_name_span(&t.type_ref, &text),
+                                id,
+                            ));
                         }
                         for anno in &t.annotations {
                             if let Some(id) = anno.annotation_resolved {
@@ -970,7 +1009,7 @@ fn reference_sites(world: &World) -> Vec<(String, Span, usize)> {
                             if let Some(id) = p.type_ref.resolved {
                                 sites.push((
                                     file.name.clone(),
-                                    type_ref_name_span(&p.type_ref),
+                                    type_ref_name_span(&p.type_ref, &text),
                                     id,
                                 ));
                             }
@@ -981,7 +1020,7 @@ fn reference_sites(world: &World) -> Vec<(String, Span, usize)> {
                             if let Some(id) = p.type_ref.resolved {
                                 sites.push((
                                     file.name.clone(),
-                                    type_ref_name_span(&p.type_ref),
+                                    type_ref_name_span(&p.type_ref, &text),
                                     id,
                                 ));
                             }
@@ -992,7 +1031,7 @@ fn reference_sites(world: &World) -> Vec<(String, Span, usize)> {
                             if let Some(id) = f.type_ref.resolved {
                                 sites.push((
                                     file.name.clone(),
-                                    type_ref_name_span(&f.type_ref),
+                                    type_ref_name_span(&f.type_ref, &text),
                                     id,
                                 ));
                             }
@@ -1003,19 +1042,23 @@ fn reference_sites(world: &World) -> Vec<(String, Span, usize)> {
                             if let Some(id) = p.type_ref.resolved {
                                 sites.push((
                                     file.name.clone(),
-                                    type_ref_name_span(&p.type_ref),
+                                    type_ref_name_span(&p.type_ref, &text),
                                     id,
                                 ));
                             }
                         }
                         if let Some(id) = f.return_type.resolved {
-                            sites.push((file.name.clone(), type_ref_name_span(&f.return_type), id));
+                            sites.push((
+                                file.name.clone(),
+                                type_ref_name_span(&f.return_type, &text),
+                                id,
+                            ));
                         }
                     }
                     SemanticElement::Function(f) => {
                         if let Some(s) = &f.super_function {
                             if let Some(id) = s.resolved {
-                                sites.push((file.name.clone(), type_ref_name_span(s), id));
+                                sites.push((file.name.clone(), type_ref_name_span(s, &text), id));
                             }
                         }
                         walk_attributes(&f.inputs, &mut sites);
@@ -1035,7 +1078,7 @@ fn reference_sites(world: &World) -> Vec<(String, Span, usize)> {
                     SemanticElement::Rule(r) => {
                         if let Some(i) = &r.input {
                             if let Some(id) = i.resolved {
-                                sites.push((file.name.clone(), type_ref_name_span(i), id));
+                                sites.push((file.name.clone(), type_ref_name_span(i, &text), id));
                             }
                         }
                     }
@@ -1069,7 +1112,7 @@ fn reference_sites(world: &World) -> Vec<(String, Span, usize)> {
                         if let Some(id) = rep.input_type.resolved {
                             sites.push((
                                 file.name.clone(),
-                                type_ref_name_span(&rep.input_type),
+                                type_ref_name_span(&rep.input_type, &text),
                                 id,
                             ));
                         }
@@ -1097,12 +1140,16 @@ fn reference_sites(world: &World) -> Vec<(String, Span, usize)> {
                     SemanticElement::ExternalRuleSource(s) => {
                         if let Some(sup) = &s.super_source {
                             if let Some(id) = sup.resolved {
-                                sites.push((file.name.clone(), type_ref_name_span(sup), id));
+                                sites.push((file.name.clone(), type_ref_name_span(sup, &text), id));
                             }
                         }
                         for c in &s.classes {
                             if let Some(id) = c.data.resolved {
-                                sites.push((file.name.clone(), type_ref_name_span(&c.data), id));
+                                sites.push((
+                                    file.name.clone(),
+                                    type_ref_name_span(&c.data, &text),
+                                    id,
+                                ));
                             }
                             for a in &c.attributes {
                                 for r in &a.rule_references {
@@ -1133,7 +1180,11 @@ fn reference_sites(world: &World) -> Vec<(String, Span, usize)> {
                     | SemanticElement::Segment(_) => {}
                     SemanticElement::MetaType(m) => {
                         if let Some(id) = m.type_ref.resolved {
-                            sites.push((file.name.clone(), type_ref_name_span(&m.type_ref), id));
+                            sites.push((
+                                file.name.clone(),
+                                type_ref_name_span(&m.type_ref, &text),
+                                id,
+                            ));
                         }
                     }
                 }
@@ -1196,6 +1247,253 @@ pub fn references(
     });
     out.dedup_by(|a, b| a.uri == b.uri && a.range == b.range);
     out
+}
+
+// ---- rename -----------------------------------------------------------------
+
+/// Rune grammar keyword tokens: Xtext reserves every keyword token, so a
+/// plain occurrence would parse as the keyword, not as a name. The words
+/// the grammar's `ValidID` rule explicitly re-allows (`condition`,
+/// `source`, `version`, `scope`, `ingest`, `enrich`, `projection`) are
+/// *not* listed here — they are legal names.
+const RUNE_KEYWORDS: &[&str] = &[
+    "absent",
+    "add",
+    "alias",
+    "all",
+    "and",
+    "annotation",
+    "any",
+    "as",
+    "basicType",
+    "body",
+    "choice",
+    "contains",
+    "corpus",
+    "count",
+    "default",
+    "disjoint",
+    "displayName",
+    "docReference",
+    "eligibility",
+    "else",
+    "empty",
+    "enum",
+    "exists",
+    "extends",
+    "extract",
+    "False",
+    "filter",
+    "first",
+    "flatten",
+    "for",
+    "from",
+    "func",
+    "function",
+    "if",
+    "import",
+    "in",
+    "inputs",
+    "is",
+    "item",
+    "join",
+    "label",
+    "last",
+    "library",
+    "max",
+    "metaType",
+    "min",
+    "multiple",
+    "namespace",
+    "only",
+    "or",
+    "output",
+    "override",
+    "prefix",
+    "provision",
+    "rationale",
+    "reduce",
+    "report",
+    "reportedField",
+    "reporting",
+    "reverse",
+    "root",
+    "rule",
+    "ruleReference",
+    "schema",
+    "segment",
+    "set",
+    "single",
+    "sort",
+    "sum",
+    "super",
+    "switch",
+    "then",
+    "True",
+    "type",
+    "typeAlias",
+    "when",
+    "with",
+];
+
+/// Rust keywords (strict, 2018 and 2024 reserved): renamed model elements
+/// surface as identifiers in generated bindings, so names like `fn` or
+/// `trait` would break downstream code generation.
+const RUST_KEYWORDS: &[&str] = &[
+    "abstract", "as", "async", "await", "become", "box", "break", "const", "continue", "crate",
+    "do", "dyn", "else", "enum", "extern", "false", "final", "fn", "for", "gen", "if", "impl",
+    "in", "let", "loop", "macro", "match", "mod", "move", "mut", "override", "priv", "pub", "ref",
+    "return", "self", "Self", "static", "struct", "super", "trait", "true", "try", "type",
+    "typeof", "union", "unsafe", "unsized", "use", "virtual", "where", "while", "yield",
+];
+
+/// Reject invalid rename targets: empty names, anything outside the
+/// Xtext `ID` shape `[A-Za-z_][A-Za-z0-9_]*` (the `^` escape is source
+/// spelling, not part of a name — so a proposed `^enum` is illegal), and
+/// Rune/Rust keywords (no auto-escaping: a keyword rename would collide
+/// with the grammar and must be spelled by the user if ever needed).
+fn validate_new_name(new_name: &str) -> Result<(), String> {
+    if new_name.is_empty() {
+        return Err("the new name is empty".to_string());
+    }
+    let valid_shape = {
+        let mut chars = new_name.chars();
+        chars
+            .next()
+            .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+            && chars.all(|c| c.is_ascii_alphanumeric() || c == '_')
+    };
+    if !valid_shape {
+        return Err(format!(
+            "'{new_name}' is not a valid Rune identifier (expected [A-Za-z_][A-Za-z0-9_]*)"
+        ));
+    }
+    if RUNE_KEYWORDS.contains(&new_name) || RUST_KEYWORDS.contains(&new_name) {
+        return Err(format!("'{new_name}' is a reserved keyword"));
+    }
+    Ok(())
+}
+
+/// The exact region a rename replaces: the last segment of a (possibly
+/// qualified) name region. A `^` escape is absorbed into the replaced
+/// range — whether it precedes the segment (`^enum`) or follows the
+/// qualifier dot (`a.b.^enum`) — so a renamed keyword name comes out
+/// clean and unescaped.
+fn rename_region(text: &str, span: Span) -> Span {
+    let end = span.end.min(text.len());
+    let hay_start = span.start.min(end);
+    let mut start = hay_start + text[hay_start..end].rfind('.').map_or(0, |i| i + 1);
+    if start > 0 && text.as_bytes()[start - 1] == b'^' {
+        start -= 1;
+    }
+    Span::new(start, end)
+}
+
+/// The simple (last segment) name of an element by flat id.
+fn simple_name(world: &World, flat: usize) -> &str {
+    let fqn = &world.analysis().resolution.element_names[flat];
+    fqn.rsplit('.').next().unwrap_or(fqn)
+}
+
+/// The resolution file name and element span of a declaration by flat id
+/// (the raw name, unlike [`location_in`]: it may be a `builtin:` file).
+fn element_file_and_span(world: &World, flat: usize) -> Option<(String, Span)> {
+    let resolution = &world.analysis().resolution;
+    let span = *resolution.element_spans.get(flat)?;
+    let mut count = 0usize;
+    for file in &resolution.files {
+        if flat < count + file.elements.len() {
+            return Some((file.name.clone(), span));
+        }
+        count += file.elements.len();
+    }
+    None
+}
+
+/// `textDocument/rename`: rename the element under the cursor across the
+/// whole workspace. The site index is the same one `references` uses
+/// (every type/annotation reference resolving to the target), plus the
+/// declaration's name region. Edits never touch `builtin:` files (the
+/// built-in library is read-only), and a rename whose *declaration* lives
+/// there is rejected outright.
+pub fn rename(
+    world: &World,
+    uri: &str,
+    position: lsp_types::Position,
+    new_name: &str,
+) -> Result<lsp_types::WorkspaceEdit, String> {
+    validate_new_name(new_name)?;
+    let doc = world
+        .document(uri)
+        .ok_or_else(|| format!("unknown document: {uri}"))?;
+    let offset = doc.offset(position, world.encoding());
+    let target = match select_at(world, uri, offset) {
+        Some((_, Selected::Element(flat))) => Some(flat),
+        Some((_, Selected::TypeRef { resolved })) => resolved,
+        Some((_, Selected::AnnotationRef { resolved })) => resolved,
+        Some((_, Selected::Attribute { .. })) => {
+            return Err(
+                "attributes cannot be renamed: their references are not tracked yet".to_string(),
+            );
+        }
+        Some((_, Selected::EnumValue { .. })) => {
+            return Err(
+                "enum values cannot be renamed: their references are not tracked yet".to_string(),
+            );
+        }
+        None => return Err("no renameable symbol at this position".to_string()),
+    };
+    let target = target.ok_or("unresolved references cannot be renamed")?;
+
+    // The declaration must live in a workspace document, never `builtin:`.
+    let (decl_file, decl_span) =
+        element_file_and_span(world, target).ok_or("the target has no declaration span")?;
+    if world.document(&decl_file).is_none() {
+        return Err(format!(
+            "'{}' is declared in the read-only built-in library ({decl_file})",
+            simple_name(world, target)
+        ));
+    }
+    let decl_text = world
+        .document(&decl_file)
+        .expect("checked above")
+        .text
+        .clone();
+    let decl_region = rename_region(
+        &decl_text,
+        find_name_region(&decl_text, decl_span, simple_name(world, target)),
+    );
+
+    let mut sites = vec![(decl_file, decl_region)];
+    for (file, span, id) in reference_sites(world) {
+        if id != target || world.document(&file).is_none() {
+            continue; // another target, or a read-only builtin site
+        }
+        sites.push((file, span));
+    }
+
+    // `WorkspaceEdit.changes` is keyed by `Uri` per the LSP schema.
+    #[allow(clippy::mutable_key_type)]
+    let mut changes: HashMap<lsp_types::Uri, Vec<lsp_types::TextEdit>> = HashMap::new();
+    for (file, span) in sites {
+        let doc = world.document(&file).expect("workspace document");
+        let range = doc.range(rename_region(&doc.text, span), world.encoding());
+        let uri: lsp_types::Uri = serde_json::from_value(serde_json::Value::String(file.clone()))
+            .expect("uri round-trips");
+        changes.entry(uri).or_default().push(lsp_types::TextEdit {
+            range,
+            new_text: new_name.to_string(),
+        });
+    }
+    for edits in changes.values_mut() {
+        edits.sort_by_key(|e| (e.range.start.line, e.range.start.character));
+        edits.dedup_by(|a, b| a.range == b.range);
+    }
+    Ok(lsp_types::WorkspaceEdit {
+        changes: Some(changes),
+        document_changes: None,
+        change_annotations: None,
+    })
 }
 
 // ---- workspace/symbol -------------------------------------------------------

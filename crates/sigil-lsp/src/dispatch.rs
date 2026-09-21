@@ -41,6 +41,7 @@ pub fn server_capabilities(encoding: PositionEncoding) -> ServerCapabilities {
             work_done_progress_options: Default::default(),
         }),
         references_provider: Some(OneOf::Left(true)),
+        rename_provider: Some(OneOf::Left(true)),
         workspace_symbol_provider: Some(OneOf::Left(true)),
         ..ServerCapabilities::default()
     }
@@ -178,6 +179,41 @@ fn on_request(connection: &Connection, world: &World, req: Request) {
                     params.context.include_declaration,
                 ))
             })
+        }
+        lsp_types::request::Rename::METHOD => {
+            match serde_json::from_value::<lsp_types::RenameParams>(req.params.clone()) {
+                Ok(params) => {
+                    let uri = params.text_document_position.text_document.uri.to_string();
+                    match features::rename(
+                        world,
+                        &uri,
+                        params.text_document_position.position,
+                        &params.new_name,
+                    ) {
+                        Ok(edit) => match serde_json::to_value(edit) {
+                            Ok(value) => Response::new_ok(req.id, value),
+                            Err(e) => Response::new_err(
+                                req.id,
+                                ErrorCode::InternalError as i32,
+                                format!("serialize response: {e}"),
+                            ),
+                        },
+                        // Invalid names / unrenamable targets: the request
+                        // was syntactically fine, so RequestFailed (LSP
+                        // 3.17) with a human-readable reason.
+                        Err(message) => Response::new_err(
+                            req.id,
+                            ErrorCode::RequestFailed as i32,
+                            format!("cannot rename: {message}"),
+                        ),
+                    }
+                }
+                Err(e) => Response::new_err(
+                    req.id,
+                    ErrorCode::InvalidParams as i32,
+                    format!("invalid params: {e}"),
+                ),
+            }
         }
         lsp_types::request::WorkspaceSymbolRequest::METHOD => handle(
             req.id,
