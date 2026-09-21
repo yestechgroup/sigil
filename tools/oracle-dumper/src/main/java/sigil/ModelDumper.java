@@ -18,16 +18,23 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regnosys.rosetta.builtin.RosettaBuiltinsService;
 import com.regnosys.rosetta.rosetta.Import;
 import com.regnosys.rosetta.rosetta.RosettaBasicType;
+import com.regnosys.rosetta.rosetta.RosettaBody;
 import com.regnosys.rosetta.rosetta.RosettaCardinality;
+import com.regnosys.rosetta.rosetta.RosettaCorpus;
 import com.regnosys.rosetta.rosetta.RosettaDocReference;
 import com.regnosys.rosetta.rosetta.RosettaEnumValue;
 import com.regnosys.rosetta.rosetta.RosettaEnumeration;
 import com.regnosys.rosetta.rosetta.RosettaExternalFunction;
+import com.regnosys.rosetta.rosetta.RosettaExternalRuleSource;
+import com.regnosys.rosetta.rosetta.RosettaMetaType;
 import com.regnosys.rosetta.rosetta.RosettaModel;
 import com.regnosys.rosetta.rosetta.RosettaParameter;
 import com.regnosys.rosetta.rosetta.RosettaQualifiableConfiguration;
 import com.regnosys.rosetta.rosetta.RosettaRecordFeature;
 import com.regnosys.rosetta.rosetta.RosettaRecordType;
+import com.regnosys.rosetta.rosetta.RosettaReport;
+import com.regnosys.rosetta.rosetta.RosettaRule;
+import com.regnosys.rosetta.rosetta.RosettaSegment;
 import com.regnosys.rosetta.rosetta.RosettaTypeAlias;
 import com.regnosys.rosetta.rosetta.TypeCall;
 import com.regnosys.rosetta.rosetta.TypeCallArgument;
@@ -40,6 +47,69 @@ import com.regnosys.rosetta.rosetta.simple.Choice;
 import com.regnosys.rosetta.rosetta.simple.Data;
 import com.regnosys.rosetta.rosetta.simple.LabelAnnotation;
 import com.regnosys.rosetta.rosetta.simple.RuleReferenceAnnotation;
+import com.regnosys.rosetta.rosetta.simple.Condition;
+import com.regnosys.rosetta.rosetta.simple.Function;
+import com.regnosys.rosetta.rosetta.simple.FunctionDispatch;
+import com.regnosys.rosetta.rosetta.simple.Operation;
+import com.regnosys.rosetta.rosetta.simple.Segment;
+import com.regnosys.rosetta.rosetta.simple.ShortcutDeclaration;
+import com.regnosys.rosetta.rosetta.expression.ArithmeticOperation;
+import com.regnosys.rosetta.rosetta.expression.AsKeyOperation;
+import com.regnosys.rosetta.rosetta.expression.ChoiceOperation;
+import com.regnosys.rosetta.rosetta.expression.ComparisonOperation;
+import com.regnosys.rosetta.rosetta.expression.ConstructorKeyValuePair;
+import com.regnosys.rosetta.rosetta.expression.DefaultOperation;
+import com.regnosys.rosetta.rosetta.expression.DistinctOperation;
+import com.regnosys.rosetta.rosetta.expression.EqualityOperation;
+import com.regnosys.rosetta.rosetta.expression.FilterOperation;
+import com.regnosys.rosetta.rosetta.expression.FirstOperation;
+import com.regnosys.rosetta.rosetta.expression.FlattenOperation;
+import com.regnosys.rosetta.rosetta.expression.InlineFunction;
+import com.regnosys.rosetta.rosetta.expression.JoinOperation;
+import com.regnosys.rosetta.rosetta.expression.LastOperation;
+import com.regnosys.rosetta.rosetta.expression.ListLiteral;
+import com.regnosys.rosetta.rosetta.expression.LogicalOperation;
+import com.regnosys.rosetta.rosetta.expression.MapOperation;
+import com.regnosys.rosetta.rosetta.expression.MaxOperation;
+import com.regnosys.rosetta.rosetta.expression.MinOperation;
+import com.regnosys.rosetta.rosetta.expression.OneOfOperation;
+import com.regnosys.rosetta.rosetta.expression.RosettaOnlyElement;
+import com.regnosys.rosetta.rosetta.expression.ReduceOperation;
+import com.regnosys.rosetta.rosetta.expression.ReverseOperation;
+import com.regnosys.rosetta.rosetta.expression.RosettaAbsentExpression;
+import com.regnosys.rosetta.rosetta.expression.RosettaBooleanLiteral;
+import com.regnosys.rosetta.rosetta.expression.RosettaConditionalExpression;
+import com.regnosys.rosetta.rosetta.expression.RosettaConstructorExpression;
+import com.regnosys.rosetta.rosetta.expression.RosettaContainsExpression;
+import com.regnosys.rosetta.rosetta.expression.RosettaCountOperation;
+import com.regnosys.rosetta.rosetta.expression.RosettaDeepFeatureCall;
+import com.regnosys.rosetta.rosetta.expression.RosettaDisjointExpression;
+import com.regnosys.rosetta.rosetta.expression.RosettaExistsExpression;
+import com.regnosys.rosetta.rosetta.expression.RosettaExpression;
+import com.regnosys.rosetta.rosetta.expression.RosettaFeatureCall;
+import com.regnosys.rosetta.rosetta.expression.RosettaImplicitVariable;
+import com.regnosys.rosetta.rosetta.expression.RosettaIntLiteral;
+import com.regnosys.rosetta.rosetta.expression.RosettaNumberLiteral;
+import com.regnosys.rosetta.rosetta.expression.RosettaOnlyExistsExpression;
+import com.regnosys.rosetta.rosetta.expression.RosettaStringLiteral;
+import com.regnosys.rosetta.rosetta.expression.RosettaSymbolReference;
+import com.regnosys.rosetta.rosetta.expression.RosettaUnaryOperation;
+import com.regnosys.rosetta.rosetta.expression.SortOperation;
+import com.regnosys.rosetta.rosetta.expression.SumOperation;
+import com.regnosys.rosetta.rosetta.expression.SwitchCaseGuard;
+import com.regnosys.rosetta.rosetta.expression.SwitchCaseOrDefault;
+import com.regnosys.rosetta.rosetta.expression.SwitchOperation;
+import com.regnosys.rosetta.rosetta.expression.ThenOperation;
+import com.regnosys.rosetta.rosetta.expression.ToDateOperation;
+import com.regnosys.rosetta.rosetta.expression.ToDateTimeOperation;
+import com.regnosys.rosetta.rosetta.expression.ToEnumOperation;
+import com.regnosys.rosetta.rosetta.expression.ToIntOperation;
+import com.regnosys.rosetta.rosetta.expression.ToNumberOperation;
+import com.regnosys.rosetta.rosetta.expression.ToTimeOperation;
+import com.regnosys.rosetta.rosetta.expression.ToZonedDateTimeOperation;
+import com.regnosys.rosetta.rosetta.expression.ToStringOperation;
+import com.regnosys.rosetta.rosetta.expression.WithMetaEntry;
+import com.regnosys.rosetta.rosetta.expression.WithMetaOperation;
 import com.regnosys.rosetta.tests.RosettaTestInjectorProvider;
 
 /**
@@ -70,6 +140,13 @@ public class ModelDumper {
         for (String path : args) {
             URI uri = URI.createFileURI(new File(path).getAbsolutePath());
             Resource resource = resourceSet.getResource(uri, true);
+            if (!resource.getErrors().isEmpty()) {
+                System.err.println("parse errors in " + path + ":");
+                for (var error : resource.getErrors()) {
+                    System.err.println("  " + error);
+                }
+                System.exit(3);
+            }
             EObject root = resource.getContents().get(0);
             if (root instanceof RosettaModel model) {
                 models.add(model);
@@ -138,6 +215,17 @@ public class ModelDumper {
             json.put("annotations", annotationsJson(data.getAnnotations()));
             json.put("docReferences", docRefsJson(data.getReferences()));
             json.put("attributes", attributesJson(data.getAttributes()));
+            List<Object> conditions = new ArrayList<>();
+            for (Condition condition : data.getConditions()) {
+                Map<String, Object> jsonCondition = new LinkedHashMap<>();
+                jsonCondition.put("name", condition.getName());
+                jsonCondition.put("definition", condition.getDefinition());
+                jsonCondition.put("annotations", annotationsJson(condition.getAnnotations()));
+                jsonCondition.put("docReferences", docRefsJson(condition.getReferences()));
+                jsonCondition.put("expression", expressionJson(condition.getExpression()));
+                conditions.add(jsonCondition);
+            }
+            json.put("conditions", conditions);
             return json;
         }
         if (element instanceof RosettaEnumeration enumeration) {
@@ -222,10 +310,195 @@ public class ModelDumper {
             json.put("returnType", typeCallJson(function.getTypeCall()));
             return json;
         }
+        if (element instanceof Function function) {
+            Map<String, Object> json = new LinkedHashMap<>();
+            json.put("kind", "Function");
+            json.put("name", function.getName());
+            json.put("definition", function.getDefinition());
+            if (function instanceof FunctionDispatch dispatch) {
+                Map<String, Object> jsonDispatch = new LinkedHashMap<>();
+                jsonDispatch.put("attribute", dispatch.getAttribute() == null ? null
+                        : dispatch.getAttribute().getName());
+                jsonDispatch.put("enumeration", dispatch.getValue() == null
+                        || dispatch.getValue().getEnumeration() == null ? null
+                        : dispatch.getValue().getEnumeration().getName());
+                jsonDispatch.put("value", dispatch.getValue() == null
+                        || dispatch.getValue().getValue() == null ? null
+                        : dispatch.getValue().getValue().getName());
+                json.put("dispatch", jsonDispatch);
+            } else {
+                json.put("dispatch", null);
+            }
+            json.put("annotations", annotationsJson(function.getAnnotations()));
+            json.put("docReferences", docRefsJson(function.getReferences()));
+            json.put("inputs", attributesJson(function.getInputs()));
+            json.put("output", function.getOutput() == null ? null
+                    : attributesJson(List.of(function.getOutput())).get(0));
+            List<Object> shortcuts = new ArrayList<>();
+            for (ShortcutDeclaration shortcut : function.getShortcuts()) {
+                Map<String, Object> jsonShortcut = new LinkedHashMap<>();
+                jsonShortcut.put("name", shortcut.getName());
+                jsonShortcut.put("definition", shortcut.getDefinition());
+                jsonShortcut.put("expression", expressionJson(shortcut.getExpression()));
+                shortcuts.add(jsonShortcut);
+            }
+            json.put("shortcuts", shortcuts);
+            json.put("conditions", conditionsJson(function.getConditions()));
+            List<Object> operations = new ArrayList<>();
+            for (Operation op : function.getOperations()) {
+                Map<String, Object> jsonOperation = new LinkedHashMap<>();
+                jsonOperation.put("definition", op.getDefinition());
+                jsonOperation.put("add", op.isAdd());
+                jsonOperation.put("assignRoot", op.getAssignRoot() == null ? null
+                        : op.getAssignRoot().getName());
+                List<Object> path = new ArrayList<>();
+                Segment segment = op.getPath();
+                while (segment != null) {
+                    path.add(segment.getFeature() == null ? null : segment.getFeature().getName());
+                    segment = segment.getNext();
+                }
+                jsonOperation.put("path", path);
+                jsonOperation.put("expression", expressionJson(op.getExpression()));
+                operations.add(jsonOperation);
+            }
+            json.put("operations", operations);
+            json.put("postConditions", conditionsJson(function.getPostConditions()));
+            return json;
+        }
+        if (element instanceof RosettaRule rule) {
+            Map<String, Object> json = new LinkedHashMap<>();
+            json.put("kind", "Rule");
+            json.put("name", rule.getName());
+            json.put("definition", rule.getDefinition());
+            json.put("eligibility", rule.isEligibility());
+            json.put("input", typeCallJson(rule.getInput()));
+            json.put("expression", expressionJson(rule.getExpression()));
+            return json;
+        }
+        if (element instanceof RosettaReport report) {
+            Map<String, Object> json = new LinkedHashMap<>();
+            json.put("kind", "Report");
+            Map<String, Object> body = new LinkedHashMap<>();
+            var regulatory = report.getRegulatoryBody();
+            body.put("body", regulatory == null || regulatory.getBody() == null ? null
+                    : fqn(regulatory.getBody()));
+            List<Object> corpora = new ArrayList<>();
+            if (regulatory != null) {
+                for (var corpus : regulatory.getCorpusList()) {
+                    corpora.add(fqn(corpus));
+                }
+            }
+            body.put("corpora", corpora);
+            List<Object> segments = new ArrayList<>();
+            if (regulatory != null) {
+                for (var segment : regulatory.getSegments()) {
+                    Map<String, Object> jsonSegment = new LinkedHashMap<>();
+                    jsonSegment.put("segment", segment.getSegment() == null ? null
+                            : fqn(segment.getSegment()));
+                    jsonSegment.put("reference", segment.getSegmentRef());
+                    segments.add(jsonSegment);
+                }
+            }
+            body.put("segments", segments);
+            json.put("regulatoryBody", body);
+            List<Object> eligibilityRules = new ArrayList<>();
+            for (var rule : report.getEligibilityRules()) {
+                eligibilityRules.add(fqn(rule));
+            }
+            json.put("eligibilityRules", eligibilityRules);
+            json.put("inputType", typeCallJson(report.getInputType()));
+            json.put("reportType", report.getReportType() == null ? null
+                    : fqn(report.getReportType()));
+            json.put("ruleSource", report.getRuleSource() == null ? null
+                    : fqn(report.getRuleSource()));
+            return json;
+        }
+        if (element instanceof RosettaExternalRuleSource source) {
+            Map<String, Object> json = new LinkedHashMap<>();
+            json.put("kind", "ExternalRuleSource");
+            json.put("name", source.getName());
+            json.put("superSource", source.getSuperRuleSources().isEmpty() ? null
+                    : fqn(source.getSuperRuleSources().get(0)));
+            List<Object> classes = new ArrayList<>();
+            for (var externalClass : source.getExternalClasses()) {
+                Map<String, Object> jsonClass = new LinkedHashMap<>();
+                jsonClass.put("data", externalClass.getData() == null ? null
+                        : fqn(externalClass.getData()));
+                List<Object> attributes = new ArrayList<>();
+                for (var attribute : externalClass.getRegularAttributes()) {
+                    Map<String, Object> jsonAttribute = new LinkedHashMap<>();
+                    jsonAttribute.put("operator",
+                            attribute.getOperator() == com.regnosys.rosetta.rosetta.ExternalValueOperator.PLUS
+                                    ? "+"
+                                    : "-");
+                    jsonAttribute.put("attribute", attribute.getAttributeRef() == null ? null
+                            : attribute.getAttributeRef().getName());
+                    List<Object> ruleRefs = new ArrayList<>();
+                    for (RuleReferenceAnnotation rule : attribute.getExternalRuleReferences()) {
+                        Map<String, Object> jsonRule = new LinkedHashMap<>();
+                        jsonRule.put("rule", rule.getReportingRule() == null ? null
+                                : fqn(rule.getReportingRule()));
+                        jsonRule.put("empty", rule.isEmpty());
+                        ruleRefs.add(jsonRule);
+                    }
+                    jsonAttribute.put("ruleReferences", ruleRefs);
+                    attributes.add(jsonAttribute);
+                }
+                jsonClass.put("attributes", attributes);
+                classes.add(jsonClass);
+            }
+            json.put("externalClasses", classes);
+            return json;
+        }
+        if (element instanceof RosettaBody body) {
+            Map<String, Object> json = new LinkedHashMap<>();
+            json.put("kind", "Body");
+            json.put("name", body.getName());
+            json.put("bodyType", body.getBodyType());
+            json.put("definition", body.getDefinition());
+            return json;
+        }
+        if (element instanceof RosettaCorpus corpus) {
+            Map<String, Object> json = new LinkedHashMap<>();
+            json.put("kind", "Corpus");
+            json.put("name", corpus.getName());
+            json.put("corpusType", corpus.getCorpusType());
+            json.put("displayName", corpus.getDisplayName());
+            json.put("body", corpus.getBody() == null ? null : corpus.getBody().getName());
+            json.put("definition", corpus.getDefinition());
+            return json;
+        }
+        if (element instanceof RosettaSegment segment) {
+            Map<String, Object> json = new LinkedHashMap<>();
+            json.put("kind", "Segment");
+            json.put("name", segment.getName());
+            return json;
+        }
+        if (element instanceof RosettaMetaType metaType) {
+            Map<String, Object> json = new LinkedHashMap<>();
+            json.put("kind", "MetaType");
+            json.put("name", metaType.getName());
+            json.put("type", typeCallJson(metaType.getTypeCall()));
+            return json;
+        }
         return null; // construct outside the M1 subset
     }
 
-    private static List<Object> attributesJson(EList<Attribute> attributes) {
+    private static List<Object> conditionsJson(EList<Condition> conditions) {
+        List<Object> out = new ArrayList<>();
+        for (Condition condition : conditions) {
+            Map<String, Object> jsonCondition = new LinkedHashMap<>();
+            jsonCondition.put("name", condition.getName());
+            jsonCondition.put("definition", condition.getDefinition());
+            jsonCondition.put("annotations", annotationsJson(condition.getAnnotations()));
+            jsonCondition.put("docReferences", docRefsJson(condition.getReferences()));
+            jsonCondition.put("expression", expressionJson(condition.getExpression()));
+            out.add(jsonCondition);
+        }
+        return out;
+    }
+
+    private static List<Object> attributesJson(List<Attribute> attributes) {
         List<Object> jsonAttributes = new ArrayList<>();
         for (Attribute attribute : attributes) {
             Map<String, Object> jsonAttribute = new LinkedHashMap<>();
@@ -365,6 +638,303 @@ public class ModelDumper {
             b.append(node.getText().trim());
         }
         return b.toString();
+    }
+
+    // ---- expressions ---------------------------------------------------------
+    // Normalized expression JSON. The tag names mirror the ones sigil emits;
+    // the mapping from EClass names is documented in
+    // scripts/oracle_compare.py.
+
+    private static Map<String, Object> expressionJson(RosettaExpression expr) {
+        if (expr == null) {
+            return null;
+        }
+        Map<String, Object> json = new LinkedHashMap<>();
+        String cls = expr.eClass().getName();
+        switch (cls) {
+            case "RosettaBooleanLiteral" -> {
+                json.put("kind", "Boolean");
+                json.put("value", ((RosettaBooleanLiteral) expr).isValue());
+            }
+            case "RosettaStringLiteral" -> {
+                json.put("kind", "String");
+                json.put("value", ((RosettaStringLiteral) expr).getValue());
+            }
+            case "RosettaNumberLiteral" -> {
+                json.put("kind", "Number");
+                json.put("text", nodeText(expr));
+            }
+            case "RosettaIntLiteral" -> {
+                json.put("kind", "Int");
+                json.put("text", nodeText(expr));
+            }
+            case "ListLiteral" -> {
+                json.put("kind", "List");
+                json.put("elements", expressionsJson(((ListLiteral) expr).getElements()));
+            }
+            case "RosettaSymbolReference" -> {
+                json.put("kind", "SymbolReference");
+                json.put("symbol", refText(expr, "symbol"));
+                json.put("explicit", ((RosettaSymbolReference) expr).isExplicitArguments());
+                json.put("args", expressionsJson(((RosettaSymbolReference) expr).getRawArgs()));
+            }
+            case "RosettaImplicitVariable" -> json.put("kind", "ImplicitVariable");
+            case "RosettaFeatureCall" -> {
+                json.put("kind", "FeatureCall");
+                json.put("receiver", expressionJson(((RosettaFeatureCall) expr).getReceiver()));
+                json.put("feature", refText(expr, "feature"));
+            }
+            case "RosettaDeepFeatureCall" -> {
+                json.put("kind", "DeepFeatureCall");
+                json.put("receiver", expressionJson(((RosettaDeepFeatureCall) expr).getReceiver()));
+                json.put("feature", refText(expr, "feature"));
+            }
+            case "ArithmeticOperation", "LogicalOperation", "RosettaContainsExpression",
+                 "RosettaDisjointExpression", "DefaultOperation" -> {
+                json.put("kind", "Binary");
+                json.put("op", expr.eGet(expr.eClass().getEStructuralFeature("operator")));
+                json.put("left", expressionJson(binaryLeft(expr)));
+                json.put("right", expressionJson(binaryRight(expr)));
+            }
+            case "EqualityOperation" -> {
+                json.put("kind", "Binary");
+                json.put("op", ((EqualityOperation) expr).getOperator());
+                json.put("cardMod", ((EqualityOperation) expr).getCardMod().getLiteral());
+                json.put("left", expressionJson(binaryLeft(expr)));
+                json.put("right", expressionJson(binaryRight(expr)));
+            }
+            case "ComparisonOperation" -> {
+                json.put("kind", "Binary");
+                json.put("op", ((ComparisonOperation) expr).getOperator());
+                json.put("cardMod", ((ComparisonOperation) expr).getCardMod().getLiteral());
+                json.put("left", expressionJson(binaryLeft(expr)));
+                json.put("right", expressionJson(binaryRight(expr)));
+            }
+            case "JoinOperation" -> {
+                json.put("kind", "Join");
+                json.put("left", expressionJson(((JoinOperation) expr).getLeft()));
+                json.put("right", expressionJson(((JoinOperation) expr).getRight()));
+                json.put("explicitSeparator", ((JoinOperation) expr).isExplicitSeparator());
+            }
+            case "RosettaConditionalExpression" -> {
+                RosettaConditionalExpression cond = (RosettaConditionalExpression) expr;
+                json.put("kind", "Conditional");
+                json.put("if", expressionJson(cond.getIf()));
+                json.put("then", expressionJson(cond.getIfthen()));
+                json.put("else", expressionJson(cond.getElsethen()));
+                json.put("full", cond.isFull());
+            }
+            case "RosettaOnlyExistsExpression" -> {
+                RosettaOnlyExistsExpression oe = (RosettaOnlyExistsExpression) expr;
+                json.put("kind", "OnlyExists");
+                json.put("args", expressionsJson(oe.getArgs()));
+                json.put("parentheses", oe.isHasParentheses());
+            }
+            case "RosettaExistsExpression" -> {
+                RosettaExistsExpression ex = (RosettaExistsExpression) expr;
+                json.put("kind", "Exists");
+                json.put("modifier", ex.getModifier().getLiteral().toLowerCase());
+                json.put("argument", expressionJson(ex.getArgument()));
+            }
+            case "RosettaAbsentExpression" -> unaryJson(json, "Absent",
+                    ((RosettaAbsentExpression) expr).getArgument());
+            case "RosettaOnlyElement" -> unaryJson(json, "OnlyElement",
+                    ((RosettaOnlyElement) expr).getArgument());
+            case "RosettaCountOperation" -> unaryJson(json, "Count",
+                    ((RosettaCountOperation) expr).getArgument());
+            case "FlattenOperation" -> unaryJson(json, "Flatten",
+                    ((FlattenOperation) expr).getArgument());
+            case "DistinctOperation" -> unaryJson(json, "Distinct",
+                    ((DistinctOperation) expr).getArgument());
+            case "ReverseOperation" -> unaryJson(json, "Reverse",
+                    ((ReverseOperation) expr).getArgument());
+            case "FirstOperation" -> unaryJson(json, "First",
+                    ((FirstOperation) expr).getArgument());
+            case "LastOperation" -> unaryJson(json, "Last",
+                    ((LastOperation) expr).getArgument());
+            case "SumOperation" -> unaryJson(json, "Sum",
+                    ((SumOperation) expr).getArgument());
+            case "AsKeyOperation" -> unaryJson(json, "AsKey",
+                    ((AsKeyOperation) expr).getArgument());
+            case "OneOfOperation" -> unaryJson(json, "OneOf",
+                    ((OneOfOperation) expr).getArgument());
+            case "ToStringOperation" -> unaryJson(json, "ToString",
+                    ((ToStringOperation) expr).getArgument());
+            case "ToNumberOperation" -> unaryJson(json, "ToNumber",
+                    ((ToNumberOperation) expr).getArgument());
+            case "ToIntOperation" -> unaryJson(json, "ToInt",
+                    ((ToIntOperation) expr).getArgument());
+            case "ToTimeOperation" -> unaryJson(json, "ToTime",
+                    ((ToTimeOperation) expr).getArgument());
+            case "ToDateOperation" -> unaryJson(json, "ToDate",
+                    ((ToDateOperation) expr).getArgument());
+            case "ToDateTimeOperation" -> unaryJson(json, "ToDateTime",
+                    ((ToDateTimeOperation) expr).getArgument());
+            case "ToZonedDateTimeOperation" -> unaryJson(json, "ToZonedDateTime",
+                    ((ToZonedDateTimeOperation) expr).getArgument());
+            case "ToEnumOperation" -> {
+                json.put("kind", "ToEnum");
+                json.put("enumeration", refText(expr, "enumeration"));
+                json.put("argument", expressionJson(((ToEnumOperation) expr).getArgument()));
+            }
+            case "ChoiceOperation" -> {
+                ChoiceOperation choice = (ChoiceOperation) expr;
+                json.put("kind", "Choice");
+                json.put("necessity", choice.getNecessity().getLiteral());
+                List<Object> attributes = new ArrayList<>();
+                for (var attribute : choice.getAttributes()) {
+                    attributes.add(attribute.getName());
+                }
+                json.put("attributes", attributes);
+                json.put("argument", expressionJson(choice.getArgument()));
+            }
+            case "SwitchOperation" -> {
+                SwitchOperation sw = (SwitchOperation) expr;
+                json.put("kind", "Switch");
+                json.put("argument", expressionJson(sw.getArgument()));
+                List<Object> cases = new ArrayList<>();
+                for (SwitchCaseOrDefault c : sw.getCases()) {
+                    Map<String, Object> jsonCase = new LinkedHashMap<>();
+                    if (c.isDefault()) {
+                        jsonCase.put("default", true);
+                    } else {
+                        SwitchCaseGuard guard = c.getGuard();
+                        if (guard.getLiteralGuard() != null) {
+                            Map<String, Object> jsonGuard = new LinkedHashMap<>();
+                            jsonGuard.put("kind", "Literal");
+                            jsonGuard.put("value", expressionJson(guard.getLiteralGuard()));
+                            jsonCase.put("guard", jsonGuard);
+                        } else {
+                            Map<String, Object> jsonGuard = new LinkedHashMap<>();
+                            jsonGuard.put("kind", "Reference");
+                            jsonGuard.put("target", refText(guard, "symbolGuard"));
+                            jsonCase.put("guard", jsonGuard);
+                        }
+                    }
+                    jsonCase.put("expression", expressionJson(c.getExpression()));
+                    cases.add(jsonCase);
+                }
+                json.put("cases", cases);
+            }
+            case "WithMetaOperation" -> {
+                WithMetaOperation wm = (WithMetaOperation) expr;
+                json.put("kind", "WithMeta");
+                json.put("argument", expressionJson(wm.getArgument()));
+                List<Object> entries = new ArrayList<>();
+                for (WithMetaEntry entry : wm.getEntries()) {
+                    Map<String, Object> jsonEntry = new LinkedHashMap<>();
+                    jsonEntry.put("key", entry.getKey() == null ? null : entry.getKey().getName());
+                    jsonEntry.put("value", expressionJson(entry.getValue()));
+                    entries.add(jsonEntry);
+                }
+                json.put("entries", entries);
+            }
+            // Note: AsOperation/as-key do not exist in 9.58.1 (newer-main
+            // syntax); fixtures avoid them and sigil-only tests cover them.
+            case "ThenOperation", "FilterOperation", "MapOperation", "ReduceOperation",
+                 "SortOperation", "MinOperation", "MaxOperation" -> {
+                json.put("kind", cls.equals("ThenOperation") ? "Then"
+                        : cls.equals("FilterOperation") ? "Filter"
+                        : cls.equals("MapOperation") ? "Map"
+                        : cls.equals("ReduceOperation") ? "Reduce"
+                        : cls.equals("SortOperation") ? "Sort"
+                        : cls.equals("MinOperation") ? "Min" : "Max");
+                RosettaUnaryOperation functional = (RosettaUnaryOperation) expr;
+                json.put("argument", expressionJson(functional.getArgument()));
+                json.put("function", inlineFunctionJson(
+                        (InlineFunction) expr.eGet(expr.eClass()
+                                .getEStructuralFeature("function"))));
+            }
+            case "RosettaConstructorExpression" -> {
+                RosettaConstructorExpression ctor = (RosettaConstructorExpression) expr;
+                Map<String, Object> type = new LinkedHashMap<>();
+                type.put("name", ctor.getTypeCall() == null ? null
+                        : sourceText(ctor.getTypeCall(), "type"));
+                List<Object> arguments = new ArrayList<>();
+                if (ctor.getTypeCall() != null) {
+                    for (TypeCallArgument argument : ctor.getTypeCall().getArguments()) {
+                        Map<String, Object> jsonArgument = new LinkedHashMap<>();
+                        jsonArgument.put("parameter",
+                                argument.getParameter() == null ? null : argument.getParameter().getName());
+                        jsonArgument.put("value", argument.getValue() == null ? null
+                                : org.eclipse.xtext.nodemodel.util.NodeModelUtils.getTokenText(
+                                        org.eclipse.xtext.nodemodel.util.NodeModelUtils
+                                                .findActualNodeFor(argument.getValue())));
+                        arguments.add(jsonArgument);
+                    }
+                }
+                type.put("arguments", arguments);
+                json.put("kind", "Constructor");
+                json.put("type", type);
+                List<Object> values = new ArrayList<>();
+                for (ConstructorKeyValuePair pair : ctor.getValues()) {
+                    Map<String, Object> jsonPair = new LinkedHashMap<>();
+                    jsonPair.put("key", pair.getKey() == null ? null : pair.getKey().getName());
+                    jsonPair.put("value", expressionJson(pair.getValue()));
+                    values.add(jsonPair);
+                }
+                json.put("values", values);
+                json.put("implicitEmpty", ctor.isImplicitEmpty());
+            }
+            default -> throw new IllegalStateException("unhandled expression class: " + cls);
+        }
+        return json;
+    }
+
+    private static Map<String, Object> inlineFunctionJson(InlineFunction function) {
+        if (function == null) {
+            return null;
+        }
+        Map<String, Object> json = new LinkedHashMap<>();
+        List<Object> parameters = new ArrayList<>();
+        for (var parameter : function.getParameters()) {
+            parameters.add(parameter.getName());
+        }
+        json.put("parameters", parameters);
+        json.put("body", expressionJson(function.getBody()));
+        return json;
+    }
+
+    private static void unaryJson(Map<String, Object> json, String kind, RosettaExpression argument) {
+        json.put("kind", kind);
+        json.put("argument", expressionJson(argument));
+    }
+
+    private static RosettaExpression binaryLeft(EObject expr) {
+        return (RosettaExpression) expr.eGet(expr.eClass().getEStructuralFeature("left"));
+    }
+
+    private static RosettaExpression binaryRight(EObject expr) {
+        return (RosettaExpression) expr.eGet(expr.eClass().getEStructuralFeature("right"));
+    }
+
+    private static List<Object> expressionsJson(List<RosettaExpression> expressions) {
+        List<Object> out = new ArrayList<>();
+        for (RosettaExpression expression : expressions) {
+            out.add(expressionJson(expression));
+        }
+        return out;
+    }
+
+    /** The written source text of a cross-reference feature. */
+    private static String refText(EObject object, String featureName) {
+        var feature = object.eClass().getEStructuralFeature(featureName);
+        if (feature == null) {
+            return null;
+        }
+        StringBuilder b = new StringBuilder();
+        for (var node : org.eclipse.xtext.nodemodel.util.NodeModelUtils
+                .findNodesForFeature(object, feature)) {
+            b.append(node.getText().trim());
+        }
+        String text = b.toString();
+        return text.isEmpty() ? null : text;
+    }
+
+    /** The exact source text of a literal node (preserves `1.50`, signs...). */
+    private static String nodeText(EObject object) {
+        var node = org.eclipse.xtext.nodemodel.util.NodeModelUtils.findActualNodeFor(object);
+        return node == null ? null : node.getText().trim();
     }
 
     private static String fqn(EObject type) {

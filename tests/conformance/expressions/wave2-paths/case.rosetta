@@ -1,0 +1,31 @@
+namespace test.expressions.paths
+version "1.0.0"
+
+enum Quotation:
+	Ask
+	Bid
+
+type Underlying:
+	name string (1..1)
+
+type Product: <"Wave 2: paths, references and the implicit variable">
+	identifier string (1..1) <"id"> [metadata scheme]
+	price number (1..1)
+	underlying Underlying (1..1)
+	currency Quotation (1..1)
+	prices number (0..*)
+
+	condition BareSymbol: price
+	condition QualifiedSymbol: Product.price
+	condition DottedExternal: com.rosetta.model.number
+	condition FeatureCall: underlying -> name
+	condition FeatureChain: underlying -> name -> length
+	condition DeepFeatureCall: prices ->> name
+	condition DeepChain: underlying -> name ->> name
+	condition EnumValueReference: currency = Quotation -> Ask
+	condition EnumValueCompare: currency -> Ask = Quotation -> Bid
+	condition ImplicitVariable: item
+	condition ItemFeature: item -> price
+	condition SymbolWithArgs: price exists
+	condition MetaAccess: identifier -> scheme
+	condition BareProjection: price ->

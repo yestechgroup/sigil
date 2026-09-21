@@ -696,6 +696,7 @@
               }
             }
           ],
+          "conditions": [],
           "definition": "A natural person",
           "docReferences": [],
           "kind": "Data",

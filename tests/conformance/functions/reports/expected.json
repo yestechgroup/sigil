@@ -1,5 +1,33 @@
 {
-  "diagnostics": [],
+  "diagnostics": [
+    {
+      "code": "E0102",
+      "file": "case.rosetta",
+      "location": "case.rosetta:18:3",
+      "message": "unknown annotation 'ruleReference'",
+      "path": "type EsmaReport.attributes[0]",
+      "severity": "error",
+      "span": {
+        "end": {
+          "column": 1,
+          "line": 20
+        },
+        "start": {
+          "column": 3,
+          "line": 18
+        }
+      }
+    },
+    {
+      "code": "E0101",
+      "file": "case.rosetta",
+      "location": null,
+      "message": "unknown symbol 'instruction'",
+      "path": "rule IsEligible",
+      "severity": "error",
+      "span": null
+    }
+  ],
   "files": [
     {
       "configurations": [],
@@ -648,29 +676,52 @@
       "configurations": [],
       "elements": [
         {
-          "annotations": [],
-          "attributes": [
-            {
-              "annotations": [],
-              "cardinality": "(1..1)",
-              "definition": null,
-              "docReferences": [],
-              "labels": [],
-              "name": "x",
-              "override": false,
-              "ruleReferences": [],
-              "type": {
-                "arguments": [],
-                "name": "int",
-                "resolved": "com.rosetta.model.int"
-              }
-            }
-          ],
+          "bodyType": "CDR",
+          "definition": "the CDR body",
+          "kind": "Body",
+          "name": "CDRBody"
+        },
+        {
+          "body": "CDRBody",
+          "corpusType": "ESMA",
           "definition": null,
-          "docReferences": [],
-          "kind": "Data",
-          "name": "Before",
-          "superType": null
+          "displayName": "esma",
+          "kind": "Corpus",
+          "name": "ESMA"
+        },
+        {
+          "body": null,
+          "corpusType": "CFTC",
+          "definition": null,
+          "displayName": "cftc",
+          "kind": "Corpus",
+          "name": "CFTC"
+        },
+        {
+          "kind": "Segment",
+          "name": "Section1"
+        },
+        {
+          "kind": "Segment",
+          "name": "Field1"
+        },
+        {
+          "kind": "MetaType",
+          "name": "calculation",
+          "type": {
+            "arguments": [],
+            "name": "number",
+            "resolved": "com.rosetta.model.number"
+          }
+        },
+        {
+          "kind": "MetaType",
+          "name": "Pristine",
+          "type": {
+            "arguments": [],
+            "name": "number",
+            "resolved": "com.rosetta.model.number"
+          }
         },
         {
           "annotations": [],
@@ -681,37 +732,240 @@
               "definition": null,
               "docReferences": [],
               "labels": [],
-              "name": "y",
+              "name": "quantity",
               "override": false,
               "ruleReferences": [],
               "type": {
                 "arguments": [],
-                "name": "int",
-                "resolved": "com.rosetta.model.int"
+                "name": "number",
+                "resolved": "com.rosetta.model.number"
+              }
+            },
+            {
+              "annotations": [],
+              "cardinality": "(1..1)",
+              "definition": null,
+              "docReferences": [],
+              "labels": [],
+              "name": "price",
+              "override": false,
+              "ruleReferences": [],
+              "type": {
+                "arguments": [],
+                "name": "number",
+                "resolved": "com.rosetta.model.number"
               }
             }
           ],
+          "conditions": [],
           "definition": null,
           "docReferences": [],
           "kind": "Data",
-          "name": "After",
+          "name": "Instruction",
           "superType": null
+        },
+        {
+          "annotations": [],
+          "attributes": [
+            {
+              "annotations": [
+                {
+                  "annotation": {
+                    "name": "ruleReference",
+                    "resolved": null
+                  },
+                  "attribute": "ReportedQuantity",
+                  "qualifiers": []
+                }
+              ],
+              "cardinality": "(1..1)",
+              "definition": null,
+              "docReferences": [],
+              "labels": [],
+              "name": "quantity",
+              "override": false,
+              "ruleReferences": [],
+              "type": {
+                "arguments": [],
+                "name": "number",
+                "resolved": "com.rosetta.model.number"
+              }
+            }
+          ],
+          "conditions": [],
+          "definition": null,
+          "docReferences": [],
+          "kind": "Data",
+          "name": "EsmaReport",
+          "superType": null
+        },
+        {
+          "definition": "the reported quantity",
+          "eligibility": false,
+          "expression": {
+            "args": [],
+            "explicit": false,
+            "kind": "SymbolReference",
+            "symbol": "quantity"
+          },
+          "input": {
+            "arguments": [],
+            "name": "Instruction",
+            "resolved": "test.functions.reports.Instruction"
+          },
+          "kind": "Rule",
+          "name": "ReportedQuantity"
+        },
+        {
+          "definition": null,
+          "eligibility": true,
+          "expression": {
+            "argument": {
+              "args": [],
+              "explicit": false,
+              "kind": "SymbolReference",
+              "symbol": "instruction"
+            },
+            "kind": "Exists",
+            "modifier": "none"
+          },
+          "input": {
+            "arguments": [],
+            "name": "Instruction",
+            "resolved": "test.functions.reports.Instruction"
+          },
+          "kind": "Rule",
+          "name": "IsEligible"
+        },
+        {
+          "definition": null,
+          "eligibility": false,
+          "expression": {
+            "args": [],
+            "explicit": false,
+            "kind": "SymbolReference",
+            "symbol": "price"
+          },
+          "input": {
+            "arguments": [],
+            "name": "Instruction",
+            "resolved": "test.functions.reports.Instruction"
+          },
+          "kind": "Rule",
+          "name": "OtherRule"
+        },
+        {
+          "externalClasses": [
+            {
+              "attributes": [
+                {
+                  "attribute": "quantity",
+                  "operator": "+",
+                  "ruleReferences": [
+                    {
+                      "empty": false,
+                      "rule": "test.functions.reports.ReportedQuantity"
+                    }
+                  ]
+                }
+              ],
+              "data": {
+                "arguments": [],
+                "name": "EsmaReport",
+                "resolved": "test.functions.reports.EsmaReport"
+              }
+            }
+          ],
+          "kind": "ExternalRuleSource",
+          "name": "EsmaSource",
+          "superSource": null
+        },
+        {
+          "externalClasses": [],
+          "kind": "ExternalRuleSource",
+          "name": "DerivedSource",
+          "superSource": {
+            "arguments": [],
+            "name": "EsmaSource",
+            "resolved": "test.functions.reports.EsmaSource"
+          }
+        },
+        {
+          "eligibilityRules": [
+            "test.functions.reports.IsEligible",
+            "test.functions.reports.OtherRule"
+          ],
+          "inputType": {
+            "arguments": [],
+            "name": "Instruction",
+            "resolved": "test.functions.reports.Instruction"
+          },
+          "kind": "Report",
+          "regulatoryBody": {
+            "body": "test.functions.reports.CDRBody",
+            "corpora": [
+              "test.functions.reports.ESMA",
+              "test.functions.reports.CFTC"
+            ],
+            "segments": [
+              {
+                "reference": "1.a",
+                "segment": "test.functions.reports.Section1"
+              }
+            ]
+          },
+          "reportType": "test.functions.reports.EsmaReport",
+          "ruleSource": "test.functions.reports.EsmaSource"
+        },
+        {
+          "eligibilityRules": [
+            "test.functions.reports.IsEligible"
+          ],
+          "inputType": {
+            "arguments": [],
+            "name": "Instruction",
+            "resolved": "test.functions.reports.Instruction"
+          },
+          "kind": "Report",
+          "regulatoryBody": {
+            "body": "test.functions.reports.CDRBody",
+            "corpora": [
+              "test.functions.reports.CFTC"
+            ],
+            "segments": []
+          },
+          "reportType": "test.functions.reports.EsmaReport",
+          "ruleSource": null
+        },
+        {
+          "eligibilityRules": [
+            "test.functions.reports.IsEligible"
+          ],
+          "inputType": {
+            "arguments": [],
+            "name": "Instruction",
+            "resolved": "test.functions.reports.Instruction"
+          },
+          "kind": "Report",
+          "regulatoryBody": {
+            "body": "test.functions.reports.CDRBody",
+            "corpora": [
+              "test.functions.reports.ESMA"
+            ],
+            "segments": []
+          },
+          "reportType": "test.functions.reports.EsmaReport",
+          "ruleSource": "test.functions.reports.DerivedSource"
         }
       ],
       "imports": [],
       "name": "case.rosetta",
-      "namespace": "neg.unsupported",
+      "namespace": "test.functions.reports",
       "overridden": false,
       "scope": null,
       "version": "0.0.0"
     }
   ],
   "format": "sigil-model/1",
-  "syntaxDiagnostics": [
-    {
-      "code": "W0001",
-      "message": "unsupported construct 'func' skipped (not yet modelled by sigil)",
-      "severity": "warning"
-    }
-  ]
+  "syntaxDiagnostics": []
 }

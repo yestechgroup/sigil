@@ -1,0 +1,111 @@
+namespace test.functions
+
+version "1.0.0"
+
+body CDR CDRBody <"the CDR body">
+
+corpus ESMA CDRBody "esma" ESMA
+corpus CFTC "cftc" CFTC
+
+segment Section1
+
+metaType calculation number
+
+type Instruction:
+	quantity number (1..1)
+	price number (1..1)
+	labels string (0..*)
+
+type EsmaReport:
+	quantity number (1..1)
+		[metadata scheme]
+	price number (1..1)
+
+reporting rule ReportedQuantity from Instruction: <"the reported quantity">
+	quantity
+
+reporting rule ExtractedQuantity from Instruction:
+	[docReference CDRBody ESMA Section1 "1.a" provision "quantity."]
+	extract quantity
+
+reporting rule ConditionalPrice from Instruction:
+	if price > 1000.0
+	then price
+	else 0.0
+
+reporting rule LabeledList from Instruction:
+	labels
+		filter l [l <> ""]
+		then join ", "
+
+reporting rule SwitchedPrice from Instruction:
+	price switch
+		1.0 then 0.0,
+		default 1.0
+
+eligibility rule IsEligible from Instruction:
+	quantity exists and price exists
+
+func QuoteBasic: <"a basic function">
+	[codeImplementation]
+	inputs:
+		instruction Instruction (1..1)
+	output:
+		result number (1..1)
+			[metadata scheme]
+
+	alias basePrice: instruction -> price
+
+	condition InputsPresent:
+		instruction exists and basePrice exists
+
+	set result:
+		instruction -> price
+
+	add result:
+		instruction -> quantity * 2.0
+
+	post-condition ResultPresent: <"the result is present">
+		result exists
+
+func QuoteWithPath:
+	inputs:
+		instruction Instruction (1..1)
+	output:
+		result EsmaReport (1..1)
+
+	set result -> price:
+		instruction -> price
+
+	set result -> quantity:
+		Max(instruction -> quantity, 0.0)
+
+	set result:
+		EsmaReport { quantity: 1.0, price: 2.0 }
+
+	post-condition P:
+		result -> price exists
+
+func QuoteConstructor:
+	inputs:
+		instruction Instruction (1..1)
+	output:
+		result number (1..1)
+
+	set result:
+		if instruction -> price > 1000.0
+		then instruction -> price
+		else 0.0
+
+report CDRBody ESMA CFTC Section1 "1.a" in T+1 from Instruction when IsEligible and ConditionalPrice with type EsmaReport with source EsmaSource
+
+report CDRBody ESMA in real-time from Instruction when IsEligible with type EsmaReport
+
+rule source EsmaSource {
+	EsmaReport:
+		+ quantity [ruleReference ReportedQuantity]
+		- price
+}
+
+rule source EmptySource {
+}

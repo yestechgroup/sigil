@@ -5,11 +5,13 @@
 //! that the parser remains replaceable.
 
 pub mod ast;
+pub mod expr;
 mod lower;
 mod parser;
 
-pub use lower::lower;
+pub use lower::{lower, lower_expression};
 
+pub use expr::{expression, parse_expression_str};
 pub use parser::{
     annotation_path, annotation_ref, doc_reference, label_annotation, parse, rule_reference,
     source_unit,

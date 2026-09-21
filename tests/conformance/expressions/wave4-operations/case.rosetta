@@ -1,0 +1,96 @@
+namespace test.expressions.operations
+version "1.0.0"
+
+enum Quotation:
+	Ask
+	Bid
+
+type Gate: <"Wave 4: postfix/unary ops, inline functions, conditionals, constructors">
+	identifier string (1..1) [metadata scheme]
+	price number (1..1)
+	prices number (0..*)
+	currency Quotation (1..1)
+	label string (0..1)
+
+	// exists family
+	condition Exists: price exists
+	condition SingleExists: prices single exists
+	condition MultipleExists: prices multiple exists
+	condition IsAbsent: label is absent
+
+	// list / scalar postfix operators
+	condition OnlyElement: prices only-element = 1.0
+	condition Count: prices count = 1
+	condition Flatten: prices flatten = [1.0]
+	condition Distinct: prices distinct = [1.0]
+	condition Reverse: prices reverse = [1.0]
+	condition First: prices first = 1.0
+	condition Last: prices last = 1.0
+	condition Sum: prices sum = 1.0
+	condition MinBare: prices min
+	condition MaxBare: prices max
+	condition SortBare: prices sort
+	condition OneOf: currency one-of
+
+	// conversions
+	condition ToString: price to-string = "1.0"
+	condition ToNumber: identifier to-number = 1.0
+	condition ToInt: identifier to-int = 1
+	condition ToTime: identifier to-time
+	condition ToDate: identifier to-date
+	condition ToDateTime: identifier to-date-time
+	condition ToZonedDateTime: identifier to-zoned-date-time
+	condition ToEnum: identifier to-enum Quotation = Quotation -> Ask
+	condition AsOperation: price as number
+
+	// postfix chains
+	condition PostfixChain: prices distinct flatten reverse first last sum = 1.0
+	condition FeatureThenExists: identifier -> scheme exists
+
+	// inline functions: explicit with parameters, parameter-less brackets,
+	// and the implicit bare form
+	condition FilterExplicitParams: prices filter p [p > 1.0] = [2.0]
+	condition FilterBracketNoParams: prices filter [price > 1.0] contains 2.0
+	condition FilterImplicitBody: prices filter price > 1.0
+	condition ExtractExplicitParams: prices extract p [p + 1.0] = [2.0]
+	condition ExtractImplicitBody: prices extract price + 1.0
+	condition ReduceExplicitParams: prices reduce a, b [a + b] = 3.0
+	condition ReduceBracketNoParams: prices reduce [0.0] = 0.0
+	condition SortWithParams: prices sort a, b [a - b]
+	condition MinWithParams: prices min p [p > 0.0]
+	condition MaxWithParams: prices max p [p > 0.0]
+
+	// `then` chains with implicit function bodies
+	condition ThenSimple: prices then price
+	condition ThenNested: prices then price then price
+	condition ThenBodyOr: prices then price or price
+
+	// conditionals
+	condition ConditionalFull: if price > 1.0 then prices else [0.0]
+	condition ConditionalNoElse: if price > 1.0 then prices
+	condition ConditionalNested: if price > 1.0 then (if label is absent then prices else [2.0]) else [3.0]
+
+	// only-exists (primary form, both spellings)
+	condition OnlyExistsBare: price only exists
+	condition OnlyExistsParens: (price, currency) only exists
+	condition OnlyExistsPaths: (price -> identifier, item -> currency) only exists
+	condition OnlyExistsItem: item -> price only exists
+
+	// switch with literal and reference guards plus default
+	condition SwitchLiteralGuards: price switch 1 then "a", 2.5 then "b", default "c"
+	condition SwitchReferenceGuard: currency switch Quotation then "a", default "b"
+
+	// constructors: values are full expressions; trailing comma and the
+	// implicit-empty `...` marker
+	condition ConstructorSimple: Gate { identifier: "X", price: 1.0 }
+	condition ConstructorExprValues: Gate { price: 1.0 + 2.0, prices: [1.0, 2.0] }
+	condition ConstructorTrailingComma: Gate { identifier: "X", }
+	condition ConstructorImplicitEmpty: Gate { identifier: "X", price: 1.0, ... }
+	condition ConstructorBareEmpty: Gate { ... }
+	condition ConstructorAsKey: Gate { price: price as-key }
+	condition ConstructorNested: Gate { prices: Gate { price: 1.0 } -> prices }
+
+	// with-meta
+	condition WithMetaBare: price with-meta
+	condition WithMetaEmpty: price with-meta { }
+	condition WithMetaEntries: price with-meta { scheme: "http://x", other: 1 }

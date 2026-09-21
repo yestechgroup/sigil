@@ -1,0 +1,65 @@
+namespace test.functions.scoping
+
+type Trade:
+	price number (1..1)
+	quantity number (1..1)
+
+func OutputHidden: <"non-post conditions must not see the output">
+	inputs:
+		trade Trade (1..1)
+	output:
+		result number (1..1)
+
+	condition SeesOutput:
+		result exists
+
+	set result:
+		trade -> price
+
+func AliasSelfReference: <"an alias cannot reference itself">
+	inputs:
+		trade Trade (1..1)
+	output:
+		result number (1..1)
+
+	alias loop: loop + 1.0
+
+	set result:
+		loop
+
+func RootFromInput: <"the assign root must be the output or an alias">
+	inputs:
+		trade Trade (1..1)
+	output:
+		result number (1..1)
+
+	set trade -> price:
+		1.0
+
+func UnknownPathStep: <"paths resolve against the receiver type chain">
+	inputs:
+		trade Trade (1..1)
+	output:
+		result Trade (1..1)
+
+	set result -> notThere:
+		1.0
+
+func DispatchBadAttr(bogus: Trade->price): <"the dispatch attribute must be an input">
+	output:
+		result number (1..1)
+
+	set result:
+		1.0
+
+func UnknownHead: <"expression heads must resolve">
+	inputs:
+		trade Trade (1..1)
+	output:
+		result number (1..1)
+
+	condition Unknown:
+		nope exists
+
+	set result:
+		alsoNope + 1.0

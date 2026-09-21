@@ -1,0 +1,24 @@
+namespace test.expressions.literals
+version "1.0.0"
+
+type Literals: <"Wave 1: literal expressions in type conditions">
+	a int (1..1)
+	b number (1..1)
+	s string (1..1)
+	flag boolean (1..1)
+
+	condition IntLiteral: 42
+	condition NegativeIntLiteral: -7
+	condition PlusIntLiteral: +5
+	condition NumberLiteral: 1.50
+	condition NumberWithExponent: 2.5e3
+	condition NegativeNumberLiteral: -0.5
+	condition StringLiteral: "hello"
+	condition EmptyStringLiteral: ""
+	condition BooleanTrue: True
+	condition BooleanFalse: False
+	condition EmptyLiteral: empty
+	condition EmptyListLiteral: []
+	condition IntListLiteral: [1, 2, 3]
+	condition StringListLiteral: ["a", "b"]
+	condition NestedListLiteral: [1, [2, 3], empty]

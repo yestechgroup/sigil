@@ -1,0 +1,100 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Rune DSL (Rosetta)",
+  "scopeName": "source.rosetta",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#doc-string" },
+    { "include": "#annotation-use" },
+    { "include": "#keywords" },
+    { "include": "#element-declarations" },
+    { "include": "#cardinality" },
+    { "include": "#constants" },
+    { "include": "#strings" },
+    { "include": "#qualified-names" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.block.rosetta",
+          "begin": "/\\*",
+          "end": "\\*/",
+          "patterns": [{ "include": "#comments" }]
+        },
+        {
+          "name": "comment.line.double-slash.rosetta",
+          "match": "//.*$"
+        }
+      ]
+    },
+    "doc-string": {
+      "comment": "The <\"...\"> definition attached to declarations.",
+      "name": "comment.block.documentation.rosetta",
+      "match": "<\"[^\"]*\">"
+    },
+    "annotation-use": {
+      "comment": "Annotation uses like [metadata id] or [docReference ...].",
+      "name": "meta.bracketed.rosetta",
+      "begin": "\\[",
+      "end": "\\]",
+      "patterns": [
+        { "include": "#strings" },
+        { "include": "#keywords" },
+        {
+          "name": "entity.name.tag.annotation.rosetta",
+          "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)(\\.[a-zA-Z_][a-zA-Z0-9_]*)*"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.rosetta",
+          "match": "\\b(override|namespace|import|as|extends|isEvent|isProduct|root|scope|version|displayName|for|empty)\\b"
+        },
+        {
+          "name": "keyword.other.element.rosetta",
+          "match": "\\b(type|choice|enum|annotation|typeAlias|basicType|recordType|library function|func|condition|reporting rule|report|rule source|schema|body|corpus|segment|metaType)\\b"
+        }
+      ]
+    },
+    "element-declarations": {
+      "patterns": [
+        {
+          "comment": "The name after a declaration keyword.",
+          "name": "entity.name.type.rosetta",
+          "match": "\\b(type|choice|enum|annotation|typeAlias|basicType|recordType|func)\\s+([a-zA-Z_][a-zA-Z0-9_]*)"
+        },
+        {
+          "comment": "Attribute names: word at line start inside a body.",
+          "name": "variable.other.property.rosetta",
+          "match": "^\\s*(override\\s+)?([a-zA-Z_][a-zA-Z0-9_]*)\\s"
+        }
+      ]
+    },
+    "cardinality": {
+      "name": "constant.numeric.cardinality.rosetta",
+      "match": "\\(\\s*\\d+\\s*\\.\\.\\s*(\\d+|\\*)\\s*\\)"
+    },
+    "constants": {
+      "patterns": [
+        { "name": "constant.numeric.rosetta", "match": "\\b\\d+(\\.\\d+)?\\b" },
+        { "name": "constant.language.boolean.rosetta", "match": "\\b(true|false)\\b" }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.double.rosetta",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        { "name": "constant.character.escape.rosetta", "match": "\\\\." }
+      ]
+    },
+    "qualified-names": {
+      "comment": "Dotted identifiers (references, namespaces, imports).",
+      "name": "entity.name.namespace.rosetta",
+      "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)+\\b"
+    }
+  }
+}

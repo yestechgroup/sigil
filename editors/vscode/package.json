@@ -1,0 +1,64 @@
+{
+  "name": "rosetta-sigil",
+  "displayName": "Rune DSL (Rosetta) — sigil",
+  "description": "Language server, syntax highlighting and editing support for the Rune DSL (.rosetta files), powered by the sigil toolchain.",
+  "version": "0.1.0",
+  "publisher": "sigil",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yestechgroup/sigil"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Programming Languages"],
+  "keywords": ["rosetta", "rune", "finos", "cdm", "dsl"],
+  "activationEvents": ["onLanguage:rosetta"],
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "rosetta",
+        "aliases": ["Rune DSL", "Rosetta", "rosetta"],
+        "extensions": [".rosetta"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "rosetta",
+        "scopeName": "source.rosetta",
+        "path": "./syntaxes/rosetta.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "Rune DSL (sigil)",
+      "properties": {
+        "sigil.server.path": {
+          "type": "string",
+          "default": "sigil-lsp",
+          "description": "Path (or command name on PATH) of the sigil-lsp language server binary."
+        },
+        "sigil.server.args": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Extra arguments passed to sigil-lsp."
+        },
+        "sigil.trace.server": {
+          "type": "string",
+          "enum": ["off", "messages", "verbose"],
+          "default": "off",
+          "description": "Trace the communication between VS Code and the sigil language server."
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "scripts": {
+    "package": "vsce package"
+  }
+}

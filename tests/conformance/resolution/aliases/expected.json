@@ -646,7 +646,24 @@
     },
     {
       "configurations": [],
-      "elements": [],
+      "elements": [
+        {
+          "annotations": [],
+          "conditions": [],
+          "definition": null,
+          "dispatch": null,
+          "docReferences": [],
+          "inputs": [],
+          "kind": "Function",
+          "name": "Keep",
+          "operations": [],
+          "output": null,
+          "postConditions": [],
+          "shortcuts": [],
+          "superFunction": null,
+          "transform": []
+        }
+      ],
       "imports": [],
       "name": "dep.rosetta",
       "namespace": "ali.dep",
@@ -676,6 +693,7 @@
               }
             }
           ],
+          "conditions": [],
           "definition": null,
           "docReferences": [],
           "kind": "Data",
@@ -698,11 +716,5 @@
     }
   ],
   "format": "sigil-model/1",
-  "syntaxDiagnostics": [
-    {
-      "code": "W0001",
-      "message": "unsupported construct 'func' skipped (not yet modelled by sigil)",
-      "severity": "warning"
-    }
-  ]
+  "syntaxDiagnostics": []
 }

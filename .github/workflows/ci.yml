@@ -12,6 +12,8 @@ jobs:
   rust:
     name: fmt, clippy, test
     runs-on: ubuntu-latest
+    env:
+      PROPTEST_CASES: "256"
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -34,7 +36,13 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
-          cache: maven
+      - name: Cache Maven repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-v1-${{ hashFiles('tools/oracle-dumper/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-v1-
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Build sigil CLI
@@ -44,7 +52,16 @@ jobs:
         working-directory: tools/oracle-dumper
       - name: Differential comparison on conformance models
         run: |
-          set -e
-          for fixture in tests/oracle/*.rosetta; do
-            python3 scripts/oracle_compare.py "$fixture"
+          set -euo pipefail
+          shopt -s nullglob
+          fixtures=(tests/oracle/*.rosetta)
+          if [ "${#fixtures[@]}" -eq 0 ]; then
+            echo "::error::No oracle fixtures matched tests/oracle/*.rosetta (missing files or glob typo)"
+            exit 1
+          fi
+          for fixture in "${fixtures[@]}"; do
+            echo "::group::Oracle comparison: ${fixture}"
+            python3 scripts/oracle_compare.py "${fixture}"
+            echo "::endgroup::"
           done
+          echo "All ${#fixtures[@]} oracle fixture(s) compared successfully."

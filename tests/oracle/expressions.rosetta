@@ -1,0 +1,123 @@
+namespace oracle.expressions
+version "1.0.0"
+
+enum Quotation:
+	Ask
+	Bid displayName "Bid Price"
+
+type ExchangeTraded:
+	venue string (1..1)
+
+type Option:
+	style string (1..1)
+
+choice ProductType:
+	ExchangeTraded
+	Option
+
+type Product: <"expression fixture">
+	identifier string (1..1) <"id"> [metadata scheme]
+	price number (1..1)
+	quantity number (1..1)
+	currency Quotation (1..1)
+	exchange ProductType (1..1)
+	prices number (0..*)
+	tags string (0..*)
+
+	// ---- wave 1: literals ----
+	condition IntLiteral: 42
+	condition NegativeIntLiteral: -7
+	condition NumberLiteral: 1.50
+	condition StringLiteral: "hello"
+	condition BooleanTrue: True
+	condition BooleanFalse: False
+	condition EmptyLiteral: empty
+	condition EmptyListLiteral: []
+	condition IntListLiteral: [1, 2, 3]
+	condition NestedListLiteral: [1, [2, 3], empty]
+
+	// ---- wave 2: paths and references ----
+	condition SymbolReference: price
+	condition QualifiedSymbol: Product.price
+	condition FeatureCall: price -> identifier
+	condition DeepFeatureCall: prices ->> identifier
+	condition EnumValueReference: currency = Quotation -> Ask
+	condition ImplicitItem: item
+
+	// ---- wave 3: operators and precedence ----
+	condition Equality: price = 1.0
+	condition NotEquality: price <> 2.0
+	condition Comparison: price >= 1.0
+	condition Comparison2: quantity <= 2.0
+	condition Comparison3: quantity > 0
+	condition Comparison4: quantity < 10
+	condition Additive: price + quantity = 3.0
+	condition Multiplicative: price * quantity + 1.0 = 3.0
+	condition LogicalAnd: price = 1.0 and quantity = 2.0
+	condition LogicalOr: price = 1.0 or quantity = 2.0
+	condition MixedLogic: price = 1.0 or quantity = 2.0 and price <> 3.0
+	condition PrecedenceChain: price + quantity * 2.0 - 1.0 = 4.0
+	condition Contains: prices contains 1.0
+	condition Disjoint: prices disjoint [1.0, 2.0]
+	condition DefaultOp: price default 0.0 = 0.0
+	condition JoinSep: tags join ", " = "a, b"
+	condition JoinNoSep: tags join = "a"
+	condition CardModAny: prices any = 1.0
+	condition CardModAll: prices all <> 0.0
+	condition CardModCompare: prices any >= 1.0
+	condition LeftAssociative: price - quantity - 1.0 = 0.0
+	condition RightSideParen: price - (quantity - 1.0) = 0.0
+	condition FeatureCallInExpr: price -> identifier = "x"
+	condition ChainAfterCompare: (prices contains 1.0) contains 2.0
+	condition ParenthesizedLogic: (price = 1.0 or quantity = 2.0) and price <> 3.0
+
+	// ---- wave 4: postfix, functional, conditional, constructor ----
+	condition Exists: price exists
+	condition SingleExists: prices single exists
+	condition MultipleExists: prices multiple exists
+	condition IsAbsent: price is absent
+	condition OnlyElement: prices only-element = 1.0
+	condition Count: prices count = 1
+	condition Flatten: prices flatten = [1.0]
+	condition Distinct: prices distinct = [1.0]
+	condition Reverse: prices reverse = [1.0]
+	condition First: prices first = 1.0
+	condition Last: prices last = 1.0
+	condition Sum: prices sum = 1.0
+	condition Min: prices min = 1.0
+	condition Max: prices max = 1.0
+	condition MinFn: prices min p [p > 0.0]
+	condition SortFn: prices sort a, b [a - b]
+	condition OneOf: currency one-of
+	condition ToString: price to-string = "1.0"
+	condition ToNumber: identifier to-number = 1.0
+	condition ToInt: identifier to-int = 1
+	condition ToTime: identifier to-time
+	condition ToDate: identifier to-date
+	condition ToDateTime: identifier to-date-time
+	condition ToZonedDateTime: identifier to-zoned-date-time
+	condition ToEnum: identifier to-enum Quotation = Quotation -> Ask
+	condition SwitchLiteral: price switch 1 then "a", 2.5 then "b", default "c"
+	condition SwitchReference: exchange switch ExchangeTraded then "x", default "y"
+	condition FilterExplicit: prices filter p [p > 1.0] = [2.0]
+	condition FilterBracket: prices filter [price > 1.0] contains 2.0
+	condition FilterImplicit: prices filter price > 1.0
+	condition ExtractExplicit: prices extract p [p + 1.0] = [2.0]
+	condition ExtractImplicit: prices extract price + 1.0
+	condition ReduceExplicit: prices reduce a, b [a + b] = 3.0
+	condition ReduceBracket: prices reduce [0.0] = 0.0
+	condition ThenChain: prices extract price then price
+	condition ThenChainNested: prices extract price then price then price
+	condition ConditionalElse: if price > 1.0 then prices else [0.0]
+	condition ConditionalNoElse: if price > 1.0 then prices
+	condition ConditionalInExpr: (if price > 1.0 then prices else [0.0]) contains 1.0
+	condition OnlyExistsSingle: price only exists
+	condition OnlyExistsParens: (price, quantity) only exists
+	condition OnlyExistsPaths: (price -> identifier, item -> quantity) only exists
+	condition Constructor: Product { identifier: "X", price: 1.0 }
+	condition ConstructorNested: Product { identifier: "X", prices: [1.0, 2.0] }
+	condition ConstructorTrailingComma: Product { identifier: "X", }
+	condition ConstructorImplicitEmpty: Product { identifier: "X", price: 1.0, ... }
+	condition ConstructorBare: Product { ... }
+	condition PostfixMatrix: prices distinct flatten reverse first last sum = 1.0
+	condition FeatureProjection: price ->

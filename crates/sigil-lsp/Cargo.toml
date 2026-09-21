@@ -1,0 +1,21 @@
+[package]
+name = "sigil-lsp"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Language server (LSP) for the Rune (.rosetta) DSL"
+
+[dependencies]
+crossbeam-channel = "0.5"
+lsp-server = "0.10"
+lsp-types = "0.97"
+serde = { workspace = true }
+serde_json = { workspace = true }
+sigil-diag = { workspace = true }
+sigil-syntax = { workspace = true }
+sigil-model = { workspace = true }
+sigil-resolve = { workspace = true }
+
+[dev-dependencies]
+proptest = "1"

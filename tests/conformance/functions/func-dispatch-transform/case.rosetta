@@ -1,0 +1,48 @@
+namespace test.functions.transform
+
+import test.functions.format.*
+
+schema TradingSchema FIXML <"a named serialization schema">
+
+type Trade:
+	price number (1..1)
+
+func IngestTrades: <"ingest from a named schema">
+	[ingest TradingSchema]
+	inputs:
+		trade Trade (1..1)
+	output:
+		result number (1..1)
+
+	set result:
+		trade -> price
+
+func EnrichTrades:
+	[enrich]
+	output:
+		result number (1..1)
+
+	set result:
+		0.0
+
+func ProjectTrades:
+	[projection FIXML]
+	output:
+		result number (1..1)
+
+	set result:
+		0.0
+
+func BaseFunc:
+	output:
+		result number (1..1)
+
+	set result:
+		1.0
+
+func DerivedFunc extends BaseFunc: <"extends is main-branch syntax">
+	output:
+		result number (1..1)
+
+	set result:
+		2.0

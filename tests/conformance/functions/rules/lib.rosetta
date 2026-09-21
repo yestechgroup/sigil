@@ -1,0 +1,4 @@
+namespace test.functions.rules.lib
+
+type LibMultiplier:
+	value number (1..1)

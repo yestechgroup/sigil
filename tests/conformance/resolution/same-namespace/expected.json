@@ -666,6 +666,7 @@
               }
             }
           ],
+          "conditions": [],
           "definition": null,
           "docReferences": [],
           "kind": "Data",
@@ -702,6 +703,7 @@
               }
             }
           ],
+          "conditions": [],
           "definition": null,
           "docReferences": [],
           "kind": "Data",

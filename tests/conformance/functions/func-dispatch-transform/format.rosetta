@@ -1,0 +1,6 @@
+namespace test.functions.format
+
+enum SerializationFormat:
+	JSON displayName "JSON"
+	FIXML displayName "FIXML"
+	XML displayName "XML"

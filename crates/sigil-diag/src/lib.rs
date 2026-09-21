@@ -42,6 +42,19 @@ impl From<Span> for std::ops::Range<usize> {
     }
 }
 
+/// Convert a byte offset in `text` to a 1-based (line, column) pair.
+///
+/// Lines are delimited by `\n`. Columns count Unicode scalar values (plain
+/// characters) — *not* UTF-16 code units as LSP would, and not bytes — so
+/// positions stay human-meaningful for any UTF-8 input.
+pub fn line_col_in(text: &str, offset: usize) -> (usize, usize) {
+    let offset = offset.min(text.len());
+    let prefix = &text[..offset];
+    let line = prefix.bytes().filter(|&b| b == b'\n').count() + 1;
+    let line_start = prefix.rfind('\n').map(|i| i + 1).unwrap_or(0);
+    (line, text[line_start..offset].chars().count() + 1)
+}
+
 /// A source file: name plus text.
 #[derive(Debug, Clone)]
 pub struct SourceFile {
@@ -59,19 +72,7 @@ impl SourceFile {
 
     /// Convert a byte offset to a 1-based (line, column) pair.
     pub fn line_col(&self, offset: usize) -> (usize, usize) {
-        let offset = offset.min(self.text.len());
-        let mut line = 1usize;
-        let mut line_start = 0usize;
-        for (i, b) in self.text.bytes().enumerate() {
-            if i >= offset {
-                break;
-            }
-            if b == b'\n' {
-                line += 1;
-                line_start = i + 1;
-            }
-        }
-        (line, offset - line_start + 1)
+        line_col_in(&self.text, offset)
     }
 
     /// The line of text containing `offset`, trimmed of trailing newline.
@@ -250,6 +251,13 @@ mod tests {
         assert_eq!(f.line_col(3), (1, 4));
         assert_eq!(f.line_col(6), (2, 1));
         assert_eq!(f.line_col(9), (2, 4));
+    }
+
+    #[test]
+    fn line_col_counts_characters_not_bytes() {
+        let f = SourceFile::new("a.rosetta", "héllo\nx");
+        let offset = f.text.find('o').unwrap();
+        assert_eq!(f.line_col(offset), (1, 5));
     }
 
     #[test]

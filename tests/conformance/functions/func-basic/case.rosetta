@@ -1,0 +1,83 @@
+namespace test.functions.basic
+
+enum DispatchKind:
+	First
+	Second
+
+type Trade:
+	price number (1..1)
+	quantity number (1..1)
+	symbol string (0..1)
+
+func Basic: <"a basic function with every section">
+	inputs:
+		trade Trade (1..1)
+	output:
+		result number (1..1)
+			[metadata scheme]
+
+	alias net: trade -> price
+	alias gross: net + trade -> quantity
+
+	condition InputsPresent:
+		trade exists and gross exists
+
+	set result:
+		trade -> price
+
+	add result:
+		trade -> quantity * 2.0
+
+	post-condition ResultPresent: <"the result is present">
+		result exists
+
+func WithPath: <"operations with paths and as-key">
+	inputs:
+		trade Trade (1..1)
+	output:
+		result Trade (1..1)
+
+	set result -> price:
+		trade -> price
+
+	set result -> symbol:
+		"unknown"
+
+	set result:
+		Trade { price: 1.0 } as-key
+
+	post-condition P:
+		result -> price exists
+
+func WithExpr:
+	inputs:
+		trade Trade (1..1)
+	output:
+		result number (1..1)
+
+	condition BigEnough:
+		trade -> price > 1000.0
+
+	condition HasSymbol:
+		trade -> symbol exists
+
+	set result:
+		if trade -> price > 1000.0
+		then trade -> price
+		else 0.0
+
+func NoOutputs: <"a function without output or operations">
+	inputs:
+		trade Trade (1..1)
+
+	condition OnlyInputs:
+		trade exists
+
+func WithDispatch(trade: DispatchKind->First):
+	inputs:
+		trade Trade (1..1)
+	output:
+		result number (1..1)
+
+	set result:
+		trade -> price

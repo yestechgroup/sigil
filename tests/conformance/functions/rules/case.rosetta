@@ -1,0 +1,39 @@
+namespace test.functions.rules
+
+import test.functions.rules.lib.*
+
+type Instruction:
+	quantity number (1..1)
+	price number (1..1)
+	labels string (0..*)
+	trader string (0..1)
+
+reporting rule Quantity from Instruction: <"the quantity">
+	quantity
+
+reporting rule PriceWithDefault from Instruction:
+	price default 0.0
+
+reporting rule FilteredLabels from Instruction:
+	labels
+		filter l [l <> ""]
+		then join ", "
+
+reporting rule BigTrade from Instruction:
+	quantity > 1000.0 and price exists
+
+eligibility rule EligibleInstruction from Instruction:
+	BigTrade exists
+
+reporting rule ConditionalValue from Instruction:
+	if quantity > 1000.0
+	then quantity * price
+	else 0.0
+
+reporting rule SwitchedValue from Instruction:
+	trader switch
+		"Alice" then 1,
+		default 0
+
+reporting rule ExtractedFromLib from Instruction:
+	extract LibMultiplier -> value

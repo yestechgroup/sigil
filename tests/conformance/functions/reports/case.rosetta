@@ -1,0 +1,41 @@
+namespace test.functions.reports
+
+body CDR CDRBody <"the CDR body">
+corpus ESMA CDRBody "esma" ESMA
+corpus CFTC "cftc" CFTC
+segment Section1
+segment Field1
+
+metaType calculation number
+metaType Pristine number
+
+type Instruction:
+	quantity number (1..1)
+	price number (1..1)
+
+type EsmaReport:
+	quantity number (1..1)
+		[ruleReference ReportedQuantity]
+
+reporting rule ReportedQuantity from Instruction: <"the reported quantity">
+	quantity
+
+eligibility rule IsEligible from Instruction:
+	instruction exists
+
+reporting rule OtherRule from Instruction:
+	price
+
+rule source EsmaSource {
+	EsmaReport:
+		+ quantity [ruleReference ReportedQuantity]
+}
+
+rule source DerivedSource extends EsmaSource {
+}
+
+report CDRBody ESMA CFTC Section1 "1.a" in T+3 from Instruction when IsEligible and OtherRule with type EsmaReport with source EsmaSource
+
+report CDRBody CFTC in real-time from Instruction when IsEligible with type EsmaReport
+
+report CDRBody ESMA in ASATP from Instruction when IsEligible with type EsmaReport with source DerivedSource

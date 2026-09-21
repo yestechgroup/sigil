@@ -49,21 +49,59 @@ Milestone 1 targets levels 1–2 for the model subset below.
 | library function | `library function Min(x number) number` | `RosettaExternalFunction` | `SemanticElement::LibraryFunction` | yes | done |
 | doc reference | `[docReference Body Corpus "S1" ...]` | `RosettaDocReference` | `DocReference` | partly | done |
 | label | `[label "text"]`, `[label for path "t"]` | `LabelAnnotation` | `LabelAnnotation` | n/a | done |
-| rule reference | `[ruleReference Rules]` / `[ruleReference empty]` | `RuleReferenceAnnotation` | `RuleReference` | deferred | done* |
+| rule reference | `[ruleReference Rules]` / `[ruleReference empty]` | `RuleReferenceAnnotation` | `RuleReference` | target kind | done (phase 4) |
 | builtin types | `int`, `string`, `date`, `metadata`, ... | `RosettaBuiltinsService` | embedded `builtin/*.rosetta` | yes | done |
 | scoping | local → imports → same-ns → `com.rosetta.model.*` → FQN | `RosettaScopeProvider` | `sigil-resolve` | yes | done |
-| condition | `condition Foo: <expr>` inside a type | `simple.Condition` | — | — | **deferred** (W0001, skipped) |
-| func | `func Foo:` (inputs/output/aliases/ops) | `simple.Function` | — | — | **deferred** (W0001) |
-| rule / reporting rule | `reporting rule Foo from T:` | `RosettaRule` | — | — | **deferred** (W0001) |
-| report | `report Body Corpus in T+1 ...` | `RosettaReport` | — | — | **deferred** (W0001) |
-| rule source | `rule source Foo extends Bar { }` | `RosettaExternalRuleSource` | — | — | **deferred** (W0001) |
-| schema / body / corpus / segment / metaType | `schema Foo JSON`, ... | respective classes | — | — | **deferred** (W0001) |
-| expressions | literals, paths, operators, `filter`/`extract`/... | `RosettaExpression` hierarchy | — | — | **deferred** (Phase 3) |
+| condition | `condition Foo: <expr>` inside a type | `simple.Condition` | `Condition` + `expr::Expr` | annotations + symbol heads | done (phase 3/4) |
+| func | `func Foo:` (inputs/output/aliases/ops) | `simple.Function` | `SemanticElement::Function` | yes (function-scoped) | done (phase 4) |
+| func dispatch | `func Foo(attr: Enum->VALUE)` | `simple.FunctionDispatch` | `Function.dispatch` | dispatch refs | done (phase 4)* |
+| func extends | `func Foo extends Bar:` | `simple.Function.superFunction` | `Function.super_function` | target kind | done (phase 4)* |
+| transform annotation | `[ingest X]` / `[enrich]` / `[projection Y]` | `simple.TransformAnnotation` | `Function.transform` | ref kept as written | done (phase 4)* |
+| alias | `alias name: expr` | `simple.ShortcutDeclaration` | `Function.shortcuts` | expression heads | done (phase 4) |
+| operation | `set\|add root (-> seg)*: expr as-key?` | `simple.Operation` + `simple.Segment` | `Function.operations` | root + path chain | done (phase 4) |
+| post-condition | `post-condition Foo: <expr>` | `simple.Condition (postCondition)` | `Function.post_conditions` | expression heads | done (phase 4) |
+| rule / reporting rule | `reporting rule Foo from T:` | `RosettaRule` | `SemanticElement::Rule` | input + expression heads | done (phase 4) |
+| report | `report Body Corpus in T+1 ...` | `RosettaReport` | `SemanticElement::Report` | regulatory refs, rules, types | done (phase 4)* |
+| rule source | `rule source Foo extends Bar { }` | `RosettaExternalRuleSource` | `SemanticElement::ExternalRuleSource` | class data, attributes, rule refs | done (phase 4) |
+| schema | `schema Foo JSON` | `Schema` | `SemanticElement::Schema` | annotations | done (phase 4)* |
+| body / corpus / segment | `body T Foo`, `corpus ...`, `segment Foo` | `RosettaBody` / `RosettaCorpus` / `RosettaSegment` | respective elements | n/a | done (phase 4) |
+| metaType | `metaType Foo number` | `RosettaMetaType` | `SemanticElement::MetaType` | type | done (phase 4) |
+| expressions | literals, paths, operators, `filter`/`extract`/... | `RosettaExpression` hierarchy | `sigil_model::expr::Expr` (+ normalized JSON and printer) | symbol heads (phase 4) | done (parse, IR, differential) |
 
-Deferred constructs are *recognised*: the parser emits a `W0001` warning
-identifying the construct and skips to the next element boundary, so
-models containing them still parse for the model subset. This matches the
-milestone plan in issue #1 (phases 3–9 come later).
+Rows marked `*` use syntax or metamodel features that the published 9.58.1
+oracle does not have (see "Oracle-version caveats"); they are covered by
+sigil-only conformance fixtures and normalized out of the oracle comparison.
+
+### Expression symbol resolution (phase 4)
+
+`SymbolReference` heads inside type conditions, function
+conditions/aliases/operations/post-conditions and rule expressions resolve
+against the innermost scope first, mirroring
+`RosettaScopeProvider.getSymbolParentScope`:
+
+1. inline-function closure parameters (innermost),
+2. the function scope: inputs, the output and the aliases — minus the
+   output for non-post conditions, and minus the alias itself inside its
+   own declaration,
+3. the enclosing data type's (inherited) attributes for type conditions,
+   or the rule input type's attributes for rule expressions,
+4. the file scope (local elements, imports, own namespace, built-ins).
+
+Unknown heads produce `E0101`. A dotted head (`Product.price`,
+`com.rosetta.model.number`) resolves as a qualified name or as a local
+`Type.feature` chain. Known limitations, deliberately unresolved:
+
+* `->` feature segments inside *expressions* are parsed but not
+  type-checked;
+* bare heads that only resolve via the expected type (enum values used
+  without qualification, `metadata` attributes) are not resolved;
+* `ChoiceOperation` attributes, `switch` reference guards, `to-enum` and
+  `as` targets are kept as written.
+
+Operation *assign paths* (`set result -> price:`) *are* resolved: the
+assign root must be the output or an alias, and each segment must exist on
+the receiver type chain (through data inheritance). Paths rooted at an
+alias are left unchecked because alias expression types are not inferred.
 
 ## Scoping rules (as implemented)
 
@@ -89,15 +127,16 @@ Duplicate definitions *within* a kind are reported (`E0104`).
 | Code | Meaning |
 | --- | --- |
 | `E0001` | syntax error (parse) |
-| `W0001` | unsupported construct skipped (parse) |
-| `E0101` | unknown type / super type |
+| `W0001` | reserved — unused since phase 4 (unsupported-construct skip, kept for future grammar additions) |
+| `E0101` | unknown type / super type / unknown expression symbol head |
 | `E0102` | unknown annotation |
 | `E0103` | annotation has no such attribute |
 | `E0104` | duplicate definition within a kind |
 | `E0105` | inheritance cycle |
 | `E0106` | reference target of the wrong kind |
+| `E0107` | unknown attribute (operation path, dispatch attribute, rule-source attribute) or enum value |
 
-## ## Oracle harness
+## Oracle harness
 
 `tools/oracle-dumper` is a small Maven project that depends on the
 published `com.regnosys.rosetta.tests` artifact (9.58.1). It demand-loads
@@ -107,9 +146,36 @@ the same normalized JSON as `sigil model`; `scripts/oracle_compare.py`
 diffs the two after normalization (type-argument source text, super-type
 targets, configuration roots, type-alias annotations which 9.58.1 lacks).
 
-Two oracle-version caveats: identifiers reserved in 9.58.1 (`alias`,
-`enums`) are legal in current main, and annotations on type aliases do not
-exist in 9.58.1. Fixtures avoid both so the comparison stays meaningful.
+Oracle-version caveats (9.58.1 versus current main; fixtures avoid them so
+the comparison stays meaningful):
+
+* identifiers reserved in 9.58.1 (`alias`, `enums`, `func`, `report`, ...)
+  are legal in main — a namespace named `test.func` fails to parse in
+  9.58.1;
+* annotations on type aliases do not exist in 9.58.1;
+* the `as` / `as-key` operators do not exist in 9.58.1 (newer-main syntax);
+* `with-meta` inside a type condition crashes 9.58.1 scoping;
+* conditions using `required choice` / `optional choice` parse differently
+  in 9.58.1 (they interact with the `Choice` rule);
+* inline-function parameters in 9.58.1 sit *before* the bracket
+  (`filter a, b [a + b]`, or the parameter-less `[body]`), not inside it;
+* `func extends`, `TransformAnnotation` (`[ingest ...]`) and `Schema`
+  do not exist in 9.58.1: `[ingest X]` parses there as an ordinary
+  annotation reference and the comparison normalizes the fields away;
+* function *dispatch* (`func F(x: Enum->VALUE)`) parses in 9.58.1 but its
+  function-scoped references fail to link (the dispatch attribute, assign
+  roots and path segments stay unresolved proxies), so dispatch functions
+  are covered by sigil-only conformance fixtures;
+* single-letter names (`enum E:`) are rejected by the 9.58.1 grammar
+  (lexer collision with an internal token);
+* the grammar's "without left parameter" expression forms (`filter x`,
+  `or x`) derive a generated implicit `item` as their missing side in the
+  EMF model; sigil mirrors that (`Expr::ImplicitVariable`), so both sides
+  agree.
+
+`Choice.getConditions()` in the 9.58.1 Ecore model also returns a hardcoded
+`one-of item` condition when a choice declares none; sigil mirrors that
+derived behaviour in its canonical JSON.
 
 ## The comparison artifact
 

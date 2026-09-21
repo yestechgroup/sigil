@@ -99,9 +99,13 @@ fn run(command: Command, files: &[SourceFile]) -> Result<ExitCode, String> {
             let resolution = resolve(models);
 
             if command == Command::Model {
+                let texts: Vec<(String, String)> = files
+                    .iter()
+                    .map(|f| (f.name.clone(), f.text.clone()))
+                    .collect();
                 println!(
                     "{}",
-                    serde_json::to_string_pretty(&canonical_json(&resolution))
+                    serde_json::to_string_pretty(&canonical_json(&resolution, &texts))
                         .map_err(|e| e.to_string())?
                 );
                 let has_errors = resolution

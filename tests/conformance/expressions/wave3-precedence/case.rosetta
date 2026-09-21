@@ -1,0 +1,65 @@
+namespace test.expressions.precedence
+version "1.0.0"
+
+type Test: <"Wave 3: binary operator matrix, exact precedence and associativity">
+	one number (1..1)
+	two number (1..1)
+	three number (1..1)
+	flag boolean (1..1)
+	items number (0..*)
+
+	// `a + b = c` binds as `(a + b) = c`: additive is tighter than equality
+	// (mirrors Java shouldParseQualifierWithAdditiveExpression:
+	// `test -> one + test -> two = 42`).
+	condition AdditiveVsEquality: one + two = 42
+	condition FeatureAddVsEquality: one->one + two->two = 42
+
+	// `a - b - c` is `(a - b) - c` (left-associative).
+	condition LeftAssocSub: one - two - three = 0
+	condition LeftAssocDiv: one / two / three = 0
+	condition LeftAssocContains: (items contains 1.0) contains 2.0
+
+	// Multiplicative binds tighter than additive.
+	condition MulOverAdd: one + two * three = 5
+	condition DivOverSub: one - two / three = 1
+
+	// Additive binds tighter than comparison, tighter than equality.
+	condition CmpOverAdd: one + two >= three
+	condition EqOverCmp: one <= two = True
+
+	// `and` binds tighter than `or`.
+	condition AndOverOr: flag = True and flag = False or flag = True
+	condition OrOverEq: flag = False or flag = True
+
+	// Parenthesized expressions override precedence.
+	condition ParensOverride: (one + two) * three = 3
+	condition ParensLogic: (flag = True or flag = False) and flag = False
+	condition ParensArith: one - (two - three) = 0
+
+	// Word operators sit between multiplicative and postfix:
+	// `a * b contains c` parses as `a * (b contains c)` per the grammar.
+	condition WordVsMul: one * items contains 1.0
+	condition WordVsAdd: one + items contains 1.0
+	condition DefaultVsEq: one default two = 1
+	condition JoinVsEq: items join ", " = "a"
+
+	// Cardinality modifiers attach to equality / comparison.
+	condition AnyEquality: items any = 1.0
+	condition AllEquality: items all <> 2.0
+	condition AnyComparison: items any >= 1.0
+	condition AllComparison: items all < 9.0
+	condition DoubleModifier: items any = 1.0 any <> 2.0
+
+	// Feature calls bind tighter than everything binary.
+	condition ChainVsArith: one->one + two = 3
+	condition DeepVsCompare: items->>one >= 1.0
+
+	// `then` binds loosest of all: `a then b or c` takes the whole
+	// disjunction as the implicit function body.
+	condition ThenLoosest: items then items or items
+	condition ThenVsLogic: items then flag = True and flag = True
+	condition ThenChain: items then items then items
+
+	// `if` branches are OrOperations: `else c or d` consumes the or-chain.
+	condition IfBranches: if flag = True then items else items
+	condition IfInEquality: if flag then one else two = 1

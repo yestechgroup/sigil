@@ -1,0 +1,1805 @@
+{
+  "diagnostics": [],
+  "files": [
+    {
+      "configurations": [],
+      "elements": [
+        {
+          "definition": "A boolean can either be True or False.",
+          "kind": "BasicType",
+          "name": "boolean",
+          "parameters": []
+        },
+        {
+          "definition": "A signed decimal number.",
+          "kind": "BasicType",
+          "name": "number",
+          "parameters": [
+            {
+              "definition": "The maximum number of digits that the number may have. If absent, this number may have an arbitrary number of digits.",
+              "name": "digits",
+              "type": {
+                "arguments": [],
+                "name": "int",
+                "resolved": "com.rosetta.model.int"
+              }
+            },
+            {
+              "definition": "The maximum number of digits after the decimal point that the number may have. If absent, this number may have any number of its digits after the decimal point.",
+              "name": "fractionalDigits",
+              "type": {
+                "arguments": [],
+                "name": "int",
+                "resolved": "com.rosetta.model.int"
+              }
+            },
+            {
+              "definition": "The minimum bound on this number. If absent, this number is unbounded from below.",
+              "name": "min",
+              "type": {
+                "arguments": [],
+                "name": "number",
+                "resolved": "com.rosetta.model.number"
+              }
+            },
+            {
+              "definition": "The maximum bound on this number. If absent, this number is unbounded from above.",
+              "name": "max",
+              "type": {
+                "arguments": [],
+                "name": "number",
+                "resolved": "com.rosetta.model.number"
+              }
+            }
+          ]
+        },
+        {
+          "definition": "A string of characters.",
+          "kind": "BasicType",
+          "name": "string",
+          "parameters": [
+            {
+              "definition": "The minimum number of characters that the string must have. If absent, defaults to zero.",
+              "name": "minLength",
+              "type": {
+                "arguments": [],
+                "name": "int",
+                "resolved": "com.rosetta.model.int"
+              }
+            },
+            {
+              "definition": "The maximum number of characters that the string may have. If absent, there is no limit.",
+              "name": "maxLength",
+              "type": {
+                "arguments": [],
+                "name": "int",
+                "resolved": "com.rosetta.model.int"
+              }
+            },
+            {
+              "definition": "The regular expression that this string must match. If absent, this string may contain arbitrary characters.",
+              "name": "pattern",
+              "type": {
+                "arguments": [],
+                "name": "string",
+                "resolved": "com.rosetta.model.string"
+              }
+            }
+          ]
+        },
+        {
+          "definition": "The time of the day - hour-minute-second.",
+          "kind": "BasicType",
+          "name": "time",
+          "parameters": []
+        },
+        {
+          "definition": "A regular expression.",
+          "kind": "BasicType",
+          "name": "pattern",
+          "parameters": []
+        },
+        {
+          "annotations": [],
+          "definition": "A signed decimal integer.",
+          "kind": "TypeAlias",
+          "name": "int",
+          "parameters": [
+            {
+              "definition": null,
+              "name": "digits",
+              "type": {
+                "arguments": [],
+                "name": "int",
+                "resolved": "com.rosetta.model.int"
+              }
+            },
+            {
+              "definition": null,
+              "name": "min",
+              "type": {
+                "arguments": [],
+                "name": "int",
+                "resolved": "com.rosetta.model.int"
+              }
+            },
+            {
+              "definition": null,
+              "name": "max",
+              "type": {
+                "arguments": [],
+                "name": "int",
+                "resolved": "com.rosetta.model.int"
+              }
+            }
+          ],
+          "type": {
+            "arguments": [
+              {
+                "parameter": "digits",
+                "value": {
+                  "kind": "Reference",
+                  "value": "digits"
+                }
+              },
+              {
+                "parameter": "fractionalDigits",
+                "value": {
+                  "kind": "Int",
+                  "value": 0
+                }
+              },
+              {
+                "parameter": "min",
+                "value": {
+                  "kind": "Reference",
+                  "value": "min"
+                }
+              },
+              {
+                "parameter": "max",
+                "value": {
+                  "kind": "Reference",
+                  "value": "max"
+                }
+              }
+            ],
+            "name": "number",
+            "resolved": "com.rosetta.model.number"
+          }
+        },
+        {
+          "definition": null,
+          "kind": "LibraryFunction",
+          "name": "DateRanges",
+          "parameters": [],
+          "returnType": {
+            "arguments": [],
+            "name": "date",
+            "resolved": "com.rosetta.model.date"
+          }
+        },
+        {
+          "definition": null,
+          "kind": "LibraryFunction",
+          "name": "Min",
+          "parameters": [
+            {
+              "isArray": false,
+              "name": "x",
+              "type": {
+                "arguments": [],
+                "name": "number",
+                "resolved": "com.rosetta.model.number"
+              }
+            },
+            {
+              "isArray": false,
+              "name": "y",
+              "type": {
+                "arguments": [],
+                "name": "number",
+                "resolved": "com.rosetta.model.number"
+              }
+            }
+          ],
+          "returnType": {
+            "arguments": [],
+            "name": "number",
+            "resolved": "com.rosetta.model.number"
+          }
+        },
+        {
+          "definition": null,
+          "kind": "LibraryFunction",
+          "name": "Max",
+          "parameters": [
+            {
+              "isArray": false,
+              "name": "x",
+              "type": {
+                "arguments": [],
+                "name": "number",
+                "resolved": "com.rosetta.model.number"
+              }
+            },
+            {
+              "isArray": false,
+              "name": "y",
+              "type": {
+                "arguments": [],
+                "name": "number",
+                "resolved": "com.rosetta.model.number"
+              }
+            }
+          ],
+          "returnType": {
+            "arguments": [],
+            "name": "number",
+            "resolved": "com.rosetta.model.number"
+          }
+        },
+        {
+          "definition": null,
+          "kind": "LibraryFunction",
+          "name": "Adjust",
+          "parameters": [],
+          "returnType": {
+            "arguments": [],
+            "name": "date",
+            "resolved": "com.rosetta.model.date"
+          }
+        },
+        {
+          "definition": null,
+          "kind": "LibraryFunction",
+          "name": "Within",
+          "parameters": [],
+          "returnType": {
+            "arguments": [],
+            "name": "boolean",
+            "resolved": "com.rosetta.model.boolean"
+          }
+        },
+        {
+          "definition": null,
+          "kind": "LibraryFunction",
+          "name": "IsLeapYear",
+          "parameters": [
+            {
+              "isArray": false,
+              "name": "year",
+              "type": {
+                "arguments": [],
+                "name": "number",
+                "resolved": "com.rosetta.model.number"
+              }
+            }
+          ],
+          "returnType": {
+            "arguments": [],
+            "name": "boolean",
+            "resolved": "com.rosetta.model.boolean"
+          }
+        },
+        {
+          "definition": null,
+          "features": [
+            {
+              "name": "day",
+              "type": {
+                "arguments": [],
+                "name": "int",
+                "resolved": "com.rosetta.model.int"
+              }
+            },
+            {
+              "name": "month",
+              "type": {
+                "arguments": [],
+                "name": "int",
+                "resolved": "com.rosetta.model.int"
+              }
+            },
+            {
+              "name": "year",
+              "type": {
+                "arguments": [],
+                "name": "int",
+                "resolved": "com.rosetta.model.int"
+              }
+            }
+          ],
+          "kind": "RecordType",
+          "name": "date"
+        },
+        {
+          "definition": null,
+          "features": [
+            {
+              "name": "date",
+              "type": {
+                "arguments": [],
+                "name": "date",
+                "resolved": "com.rosetta.model.date"
+              }
+            },
+            {
+              "name": "time",
+              "type": {
+                "arguments": [],
+                "name": "time",
+                "resolved": "com.rosetta.model.time"
+              }
+            }
+          ],
+          "kind": "RecordType",
+          "name": "dateTime"
+        },
+        {
+          "definition": null,
+          "features": [
+            {
+              "name": "date",
+              "type": {
+                "arguments": [],
+                "name": "date",
+                "resolved": "com.rosetta.model.date"
+              }
+            },
+            {
+              "name": "time",
+              "type": {
+                "arguments": [],
+                "name": "time",
+                "resolved": "com.rosetta.model.time"
+              }
+            },
+            {
+              "name": "timezone",
+              "type": {
+                "arguments": [],
+                "name": "string",
+                "resolved": "com.rosetta.model.string"
+              }
+            }
+          ],
+          "kind": "RecordType",
+          "name": "zonedDateTime"
+        },
+        {
+          "annotations": [],
+          "definition": null,
+          "kind": "TypeAlias",
+          "name": "calculation",
+          "parameters": [],
+          "type": {
+            "arguments": [],
+            "name": "string",
+            "resolved": "com.rosetta.model.string"
+          }
+        },
+        {
+          "annotations": [],
+          "definition": "The wire format used to (de)serialize the input or output of a transform function (e.g. an ingestion or projection).",
+          "docReferences": [],
+          "kind": "Enumeration",
+          "name": "SerializationFormat",
+          "superType": null,
+          "values": [
+            {
+              "annotations": [],
+              "definition": "JSON, following a standard JSON representation of the model.",
+              "display": null,
+              "docReferences": [],
+              "name": "JSON"
+            },
+            {
+              "annotations": [],
+              "definition": "JSON, following the Rune-specific JSON standard.",
+              "display": null,
+              "docReferences": [],
+              "name": "RUNE_JSON"
+            },
+            {
+              "annotations": [],
+              "definition": "XML, typically configured by an associated XML configuration file that maps the schema onto the Rune type.",
+              "display": null,
+              "docReferences": [],
+              "name": "XML"
+            },
+            {
+              "annotations": [],
+              "definition": "Comma-separated values. Only valid for tabular types, i.e. types whose attributes are all single-cardinality basic types.",
+              "display": null,
+              "docReferences": [],
+              "name": "CSV"
+            },
+            {
+              "annotations": [],
+              "definition": "Deprecated: use CSV with a headerStyle of LABEL in the CSV serialization configuration. Comma-separated values with a header row of human-readable labels. Reads no serialization configuration, so any configuration declared alongside it is ignored.",
+              "display": null,
+              "docReferences": [],
+              "name": "CSV_LABELLED"
+            }
+          ]
+        }
+      ],
+      "imports": [],
+      "name": "basictypes.rosetta",
+      "namespace": "com.rosetta.model",
+      "overridden": false,
+      "scope": null,
+      "version": "${project.version}"
+    },
+    {
+      "configurations": [],
+      "elements": [
+        {
+          "attributes": [
+            {
+              "annotations": [],
+              "cardinality": "(0..1)",
+              "definition": "Specifies that an attribute has a key so it can be referenced elsewhere in the model.",
+              "docReferences": [],
+              "labels": [],
+              "name": "id",
+              "override": false,
+              "ruleReferences": [],
+              "type": {
+                "arguments": [],
+                "name": "string",
+                "resolved": "com.rosetta.model.string"
+              }
+            },
+            {
+              "annotations": [],
+              "cardinality": "(0..1)",
+              "definition": "Specifies that a type has a key so it can be referenced elsewhere in the model.",
+              "docReferences": [],
+              "labels": [],
+              "name": "key",
+              "override": false,
+              "ruleReferences": [],
+              "type": {
+                "arguments": [],
+                "name": "string",
+                "resolved": "com.rosetta.model.string"
+              }
+            },
+            {
+              "annotations": [],
+              "cardinality": "(0..1)",
+              "definition": "Specifies that an attribute can be specified with a reference that corresponds to a value with a key elsewhere in the model.",
+              "docReferences": [],
+              "labels": [],
+              "name": "reference",
+              "override": false,
+              "ruleReferences": [],
+              "type": {
+                "arguments": [],
+                "name": "string",
+                "resolved": "com.rosetta.model.string"
+              }
+            },
+            {
+              "annotations": [],
+              "cardinality": "(0..1)",
+              "definition": "Specifies that an attribute can have a scheme assoicated with the value.",
+              "docReferences": [],
+              "labels": [],
+              "name": "scheme",
+              "override": false,
+              "ruleReferences": [],
+              "type": {
+                "arguments": [],
+                "name": "string",
+                "resolved": "com.rosetta.model.string"
+              }
+            },
+            {
+              "annotations": [],
+              "cardinality": "(0..1)",
+              "definition": "Specifies this is the target of an internal reference.",
+              "docReferences": [],
+              "labels": [],
+              "name": "location",
+              "override": false,
+              "ruleReferences": [],
+              "type": {
+                "arguments": [],
+                "name": "string",
+                "resolved": "com.rosetta.model.string"
+              }
+            },
+            {
+              "annotations": [],
+              "cardinality": "(0..1)",
+              "definition": "Specified that this is an internal reference to an object that appears elsewhere.",
+              "docReferences": [],
+              "labels": [],
+              "name": "address",
+              "override": false,
+              "ruleReferences": [],
+              "type": {
+                "arguments": [],
+                "name": "string",
+                "resolved": "com.rosetta.model.string"
+              }
+            }
+          ],
+          "definition": "Defines metadata that can be specified on types, attributes and enums.",
+          "kind": "Annotation",
+          "name": "metadata",
+          "prefix": null
+        },
+        {
+          "attributes": [],
+          "definition": "Marks a function as fully implemented calculation.",
+          "kind": "Annotation",
+          "name": "calculation",
+          "prefix": null
+        },
+        {
+          "attributes": [],
+          "definition": "Mark a type as a root of the rosetta model",
+          "kind": "Annotation",
+          "name": "rootType",
+          "prefix": null
+        },
+        {
+          "attributes": [
+            {
+              "annotations": [],
+              "cardinality": "(0..1)",
+              "definition": null,
+              "docReferences": [],
+              "labels": [],
+              "name": "Product",
+              "override": false,
+              "ruleReferences": [],
+              "type": {
+                "arguments": [],
+                "name": "boolean",
+                "resolved": "com.rosetta.model.boolean"
+              }
+            },
+            {
+              "annotations": [],
+              "cardinality": "(0..1)",
+              "definition": null,
+              "docReferences": [],
+              "labels": [],
+              "name": "BusinessEvent",
+              "override": false,
+              "ruleReferences": [],
+              "type": {
+                "arguments": [],
+                "name": "boolean",
+                "resolved": "com.rosetta.model.boolean"
+              }
+            }
+          ],
+          "definition": "Annotation that describes a func that is used for event and product Qualification.",
+          "kind": "Annotation",
+          "name": "qualification",
+          "prefix": "Qualify"
+        },
+        {
+          "attributes": [],
+          "definition": "Marks a type, function, enum, type alias or schema as deprecated and will be removed/replaced.",
+          "kind": "Annotation",
+          "name": "deprecated",
+          "prefix": null
+        },
+        {
+          "attributes": [],
+          "definition": "Marks a schema as having an externally-configured serialization config: its config file path is configured externally and is baked into the generated transform annotation.",
+          "kind": "Annotation",
+          "name": "externalConfig",
+          "prefix": null
+        },
+        {
+          "attributes": [],
+          "definition": "Marks the function as statically implemented by model internal code, with no body defined in Rune.",
+          "kind": "Annotation",
+          "name": "codeImplementation",
+          "prefix": null
+        },
+        {
+          "attributes": [
+            {
+              "annotations": [],
+              "cardinality": "(0..1)",
+              "definition": null,
+              "docReferences": [],
+              "labels": [],
+              "name": "capitalisation",
+              "override": false,
+              "ruleReferences": [],
+              "type": {
+                "arguments": [],
+                "name": "boolean",
+                "resolved": "com.rosetta.model.boolean"
+              }
+            }
+          ],
+          "definition": null,
+          "kind": "Annotation",
+          "name": "suppressWarnings",
+          "prefix": null
+        },
+        {
+          "attributes": [],
+          "definition": "Opt out of the 'never used' editor marker for a declaration that is not referenced anywhere in the model (e.g. part of a public API consumed by downstream models or generated code). Can be written on a function, type, choice, enum, type alias or schema; other kinds of declaration get the marker but have nowhere to put an annotation.",
+          "kind": "Annotation",
+          "name": "suppressUnused",
+          "prefix": null
+        }
+      ],
+      "imports": [],
+      "name": "annotations.rosetta",
+      "namespace": "com.rosetta.model",
+      "overridden": false,
+      "scope": null,
+      "version": "${project.version}"
+    },
+    {
+      "configurations": [],
+      "elements": [
+        {
+          "annotations": [],
+          "attributes": [
+            {
+              "annotations": [],
+              "cardinality": "(1..1)",
+              "definition": null,
+              "docReferences": [],
+              "labels": [],
+              "name": "one",
+              "override": false,
+              "ruleReferences": [],
+              "type": {
+                "arguments": [],
+                "name": "number",
+                "resolved": "com.rosetta.model.number"
+              }
+            },
+            {
+              "annotations": [],
+              "cardinality": "(1..1)",
+              "definition": null,
+              "docReferences": [],
+              "labels": [],
+              "name": "two",
+              "override": false,
+              "ruleReferences": [],
+              "type": {
+                "arguments": [],
+                "name": "number",
+                "resolved": "com.rosetta.model.number"
+              }
+            },
+            {
+              "annotations": [],
+              "cardinality": "(1..1)",
+              "definition": null,
+              "docReferences": [],
+              "labels": [],
+              "name": "three",
+              "override": false,
+              "ruleReferences": [],
+              "type": {
+                "arguments": [],
+                "name": "number",
+                "resolved": "com.rosetta.model.number"
+              }
+            },
+            {
+              "annotations": [],
+              "cardinality": "(1..1)",
+              "definition": null,
+              "docReferences": [],
+              "labels": [],
+              "name": "flag",
+              "override": false,
+              "ruleReferences": [],
+              "type": {
+                "arguments": [],
+                "name": "boolean",
+                "resolved": "com.rosetta.model.boolean"
+              }
+            },
+            {
+              "annotations": [],
+              "cardinality": "(0..*)",
+              "definition": null,
+              "docReferences": [],
+              "labels": [],
+              "name": "items",
+              "override": false,
+              "ruleReferences": [],
+              "type": {
+                "arguments": [],
+                "name": "number",
+                "resolved": "com.rosetta.model.number"
+              }
+            }
+          ],
+          "conditions": [
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "cardMod": "none",
+                "kind": "Binary",
+                "left": {
+                  "kind": "Binary",
+                  "left": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "one"
+                  },
+                  "op": "+",
+                  "right": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "two"
+                  }
+                },
+                "op": "=",
+                "right": {
+                  "kind": "Int",
+                  "text": "42"
+                }
+              },
+              "name": "AdditiveVsEquality"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "cardMod": "none",
+                "kind": "Binary",
+                "left": {
+                  "kind": "Binary",
+                  "left": {
+                    "feature": "one",
+                    "kind": "FeatureCall",
+                    "receiver": {
+                      "args": [],
+                      "explicit": false,
+                      "kind": "SymbolReference",
+                      "symbol": "one"
+                    }
+                  },
+                  "op": "+",
+                  "right": {
+                    "feature": "two",
+                    "kind": "FeatureCall",
+                    "receiver": {
+                      "args": [],
+                      "explicit": false,
+                      "kind": "SymbolReference",
+                      "symbol": "two"
+                    }
+                  }
+                },
+                "op": "=",
+                "right": {
+                  "kind": "Int",
+                  "text": "42"
+                }
+              },
+              "name": "FeatureAddVsEquality"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "cardMod": "none",
+                "kind": "Binary",
+                "left": {
+                  "kind": "Binary",
+                  "left": {
+                    "kind": "Binary",
+                    "left": {
+                      "args": [],
+                      "explicit": false,
+                      "kind": "SymbolReference",
+                      "symbol": "one"
+                    },
+                    "op": "-",
+                    "right": {
+                      "args": [],
+                      "explicit": false,
+                      "kind": "SymbolReference",
+                      "symbol": "two"
+                    }
+                  },
+                  "op": "-",
+                  "right": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "three"
+                  }
+                },
+                "op": "=",
+                "right": {
+                  "kind": "Int",
+                  "text": "0"
+                }
+              },
+              "name": "LeftAssocSub"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "cardMod": "none",
+                "kind": "Binary",
+                "left": {
+                  "kind": "Binary",
+                  "left": {
+                    "kind": "Binary",
+                    "left": {
+                      "args": [],
+                      "explicit": false,
+                      "kind": "SymbolReference",
+                      "symbol": "one"
+                    },
+                    "op": "/",
+                    "right": {
+                      "args": [],
+                      "explicit": false,
+                      "kind": "SymbolReference",
+                      "symbol": "two"
+                    }
+                  },
+                  "op": "/",
+                  "right": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "three"
+                  }
+                },
+                "op": "=",
+                "right": {
+                  "kind": "Int",
+                  "text": "0"
+                }
+              },
+              "name": "LeftAssocDiv"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "kind": "Binary",
+                "left": {
+                  "kind": "Binary",
+                  "left": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "items"
+                  },
+                  "op": "contains",
+                  "right": {
+                    "kind": "Number",
+                    "text": "1.0"
+                  }
+                },
+                "op": "contains",
+                "right": {
+                  "kind": "Number",
+                  "text": "2.0"
+                }
+              },
+              "name": "LeftAssocContains"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "cardMod": "none",
+                "kind": "Binary",
+                "left": {
+                  "kind": "Binary",
+                  "left": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "one"
+                  },
+                  "op": "+",
+                  "right": {
+                    "kind": "Binary",
+                    "left": {
+                      "args": [],
+                      "explicit": false,
+                      "kind": "SymbolReference",
+                      "symbol": "two"
+                    },
+                    "op": "*",
+                    "right": {
+                      "args": [],
+                      "explicit": false,
+                      "kind": "SymbolReference",
+                      "symbol": "three"
+                    }
+                  }
+                },
+                "op": "=",
+                "right": {
+                  "kind": "Int",
+                  "text": "5"
+                }
+              },
+              "name": "MulOverAdd"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "cardMod": "none",
+                "kind": "Binary",
+                "left": {
+                  "kind": "Binary",
+                  "left": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "one"
+                  },
+                  "op": "-",
+                  "right": {
+                    "kind": "Binary",
+                    "left": {
+                      "args": [],
+                      "explicit": false,
+                      "kind": "SymbolReference",
+                      "symbol": "two"
+                    },
+                    "op": "/",
+                    "right": {
+                      "args": [],
+                      "explicit": false,
+                      "kind": "SymbolReference",
+                      "symbol": "three"
+                    }
+                  }
+                },
+                "op": "=",
+                "right": {
+                  "kind": "Int",
+                  "text": "1"
+                }
+              },
+              "name": "DivOverSub"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "cardMod": "none",
+                "kind": "Binary",
+                "left": {
+                  "kind": "Binary",
+                  "left": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "one"
+                  },
+                  "op": "+",
+                  "right": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "two"
+                  }
+                },
+                "op": ">=",
+                "right": {
+                  "args": [],
+                  "explicit": false,
+                  "kind": "SymbolReference",
+                  "symbol": "three"
+                }
+              },
+              "name": "CmpOverAdd"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "cardMod": "none",
+                "kind": "Binary",
+                "left": {
+                  "cardMod": "none",
+                  "kind": "Binary",
+                  "left": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "one"
+                  },
+                  "op": "<=",
+                  "right": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "two"
+                  }
+                },
+                "op": "=",
+                "right": {
+                  "kind": "Boolean",
+                  "value": true
+                }
+              },
+              "name": "EqOverCmp"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "kind": "Binary",
+                "left": {
+                  "kind": "Binary",
+                  "left": {
+                    "cardMod": "none",
+                    "kind": "Binary",
+                    "left": {
+                      "args": [],
+                      "explicit": false,
+                      "kind": "SymbolReference",
+                      "symbol": "flag"
+                    },
+                    "op": "=",
+                    "right": {
+                      "kind": "Boolean",
+                      "value": true
+                    }
+                  },
+                  "op": "and",
+                  "right": {
+                    "cardMod": "none",
+                    "kind": "Binary",
+                    "left": {
+                      "args": [],
+                      "explicit": false,
+                      "kind": "SymbolReference",
+                      "symbol": "flag"
+                    },
+                    "op": "=",
+                    "right": {
+                      "kind": "Boolean",
+                      "value": false
+                    }
+                  }
+                },
+                "op": "or",
+                "right": {
+                  "cardMod": "none",
+                  "kind": "Binary",
+                  "left": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "flag"
+                  },
+                  "op": "=",
+                  "right": {
+                    "kind": "Boolean",
+                    "value": true
+                  }
+                }
+              },
+              "name": "AndOverOr"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "kind": "Binary",
+                "left": {
+                  "cardMod": "none",
+                  "kind": "Binary",
+                  "left": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "flag"
+                  },
+                  "op": "=",
+                  "right": {
+                    "kind": "Boolean",
+                    "value": false
+                  }
+                },
+                "op": "or",
+                "right": {
+                  "cardMod": "none",
+                  "kind": "Binary",
+                  "left": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "flag"
+                  },
+                  "op": "=",
+                  "right": {
+                    "kind": "Boolean",
+                    "value": true
+                  }
+                }
+              },
+              "name": "OrOverEq"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "cardMod": "none",
+                "kind": "Binary",
+                "left": {
+                  "kind": "Binary",
+                  "left": {
+                    "kind": "Binary",
+                    "left": {
+                      "args": [],
+                      "explicit": false,
+                      "kind": "SymbolReference",
+                      "symbol": "one"
+                    },
+                    "op": "+",
+                    "right": {
+                      "args": [],
+                      "explicit": false,
+                      "kind": "SymbolReference",
+                      "symbol": "two"
+                    }
+                  },
+                  "op": "*",
+                  "right": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "three"
+                  }
+                },
+                "op": "=",
+                "right": {
+                  "kind": "Int",
+                  "text": "3"
+                }
+              },
+              "name": "ParensOverride"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "kind": "Binary",
+                "left": {
+                  "kind": "Binary",
+                  "left": {
+                    "cardMod": "none",
+                    "kind": "Binary",
+                    "left": {
+                      "args": [],
+                      "explicit": false,
+                      "kind": "SymbolReference",
+                      "symbol": "flag"
+                    },
+                    "op": "=",
+                    "right": {
+                      "kind": "Boolean",
+                      "value": true
+                    }
+                  },
+                  "op": "or",
+                  "right": {
+                    "cardMod": "none",
+                    "kind": "Binary",
+                    "left": {
+                      "args": [],
+                      "explicit": false,
+                      "kind": "SymbolReference",
+                      "symbol": "flag"
+                    },
+                    "op": "=",
+                    "right": {
+                      "kind": "Boolean",
+                      "value": false
+                    }
+                  }
+                },
+                "op": "and",
+                "right": {
+                  "cardMod": "none",
+                  "kind": "Binary",
+                  "left": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "flag"
+                  },
+                  "op": "=",
+                  "right": {
+                    "kind": "Boolean",
+                    "value": false
+                  }
+                }
+              },
+              "name": "ParensLogic"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "cardMod": "none",
+                "kind": "Binary",
+                "left": {
+                  "kind": "Binary",
+                  "left": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "one"
+                  },
+                  "op": "-",
+                  "right": {
+                    "kind": "Binary",
+                    "left": {
+                      "args": [],
+                      "explicit": false,
+                      "kind": "SymbolReference",
+                      "symbol": "two"
+                    },
+                    "op": "-",
+                    "right": {
+                      "args": [],
+                      "explicit": false,
+                      "kind": "SymbolReference",
+                      "symbol": "three"
+                    }
+                  }
+                },
+                "op": "=",
+                "right": {
+                  "kind": "Int",
+                  "text": "0"
+                }
+              },
+              "name": "ParensArith"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "kind": "Binary",
+                "left": {
+                  "args": [],
+                  "explicit": false,
+                  "kind": "SymbolReference",
+                  "symbol": "one"
+                },
+                "op": "*",
+                "right": {
+                  "kind": "Binary",
+                  "left": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "items"
+                  },
+                  "op": "contains",
+                  "right": {
+                    "kind": "Number",
+                    "text": "1.0"
+                  }
+                }
+              },
+              "name": "WordVsMul"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "kind": "Binary",
+                "left": {
+                  "args": [],
+                  "explicit": false,
+                  "kind": "SymbolReference",
+                  "symbol": "one"
+                },
+                "op": "+",
+                "right": {
+                  "kind": "Binary",
+                  "left": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "items"
+                  },
+                  "op": "contains",
+                  "right": {
+                    "kind": "Number",
+                    "text": "1.0"
+                  }
+                }
+              },
+              "name": "WordVsAdd"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "cardMod": "none",
+                "kind": "Binary",
+                "left": {
+                  "kind": "Binary",
+                  "left": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "one"
+                  },
+                  "op": "default",
+                  "right": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "two"
+                  }
+                },
+                "op": "=",
+                "right": {
+                  "kind": "Int",
+                  "text": "1"
+                }
+              },
+              "name": "DefaultVsEq"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "cardMod": "none",
+                "kind": "Binary",
+                "left": {
+                  "explicitSeparator": true,
+                  "kind": "Join",
+                  "left": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "items"
+                  },
+                  "right": {
+                    "kind": "String",
+                    "value": ", "
+                  }
+                },
+                "op": "=",
+                "right": {
+                  "kind": "String",
+                  "value": "a"
+                }
+              },
+              "name": "JoinVsEq"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "cardMod": "any",
+                "kind": "Binary",
+                "left": {
+                  "args": [],
+                  "explicit": false,
+                  "kind": "SymbolReference",
+                  "symbol": "items"
+                },
+                "op": "=",
+                "right": {
+                  "kind": "Number",
+                  "text": "1.0"
+                }
+              },
+              "name": "AnyEquality"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "cardMod": "all",
+                "kind": "Binary",
+                "left": {
+                  "args": [],
+                  "explicit": false,
+                  "kind": "SymbolReference",
+                  "symbol": "items"
+                },
+                "op": "<>",
+                "right": {
+                  "kind": "Number",
+                  "text": "2.0"
+                }
+              },
+              "name": "AllEquality"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "cardMod": "any",
+                "kind": "Binary",
+                "left": {
+                  "args": [],
+                  "explicit": false,
+                  "kind": "SymbolReference",
+                  "symbol": "items"
+                },
+                "op": ">=",
+                "right": {
+                  "kind": "Number",
+                  "text": "1.0"
+                }
+              },
+              "name": "AnyComparison"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "cardMod": "all",
+                "kind": "Binary",
+                "left": {
+                  "args": [],
+                  "explicit": false,
+                  "kind": "SymbolReference",
+                  "symbol": "items"
+                },
+                "op": "<",
+                "right": {
+                  "kind": "Number",
+                  "text": "9.0"
+                }
+              },
+              "name": "AllComparison"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "cardMod": "any",
+                "kind": "Binary",
+                "left": {
+                  "cardMod": "any",
+                  "kind": "Binary",
+                  "left": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "items"
+                  },
+                  "op": "=",
+                  "right": {
+                    "kind": "Number",
+                    "text": "1.0"
+                  }
+                },
+                "op": "<>",
+                "right": {
+                  "kind": "Number",
+                  "text": "2.0"
+                }
+              },
+              "name": "DoubleModifier"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "cardMod": "none",
+                "kind": "Binary",
+                "left": {
+                  "kind": "Binary",
+                  "left": {
+                    "feature": "one",
+                    "kind": "FeatureCall",
+                    "receiver": {
+                      "args": [],
+                      "explicit": false,
+                      "kind": "SymbolReference",
+                      "symbol": "one"
+                    }
+                  },
+                  "op": "+",
+                  "right": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "two"
+                  }
+                },
+                "op": "=",
+                "right": {
+                  "kind": "Int",
+                  "text": "3"
+                }
+              },
+              "name": "ChainVsArith"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "cardMod": "none",
+                "kind": "Binary",
+                "left": {
+                  "feature": "one",
+                  "kind": "DeepFeatureCall",
+                  "receiver": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "items"
+                  }
+                },
+                "op": ">=",
+                "right": {
+                  "kind": "Number",
+                  "text": "1.0"
+                }
+              },
+              "name": "DeepVsCompare"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "argument": {
+                  "args": [],
+                  "explicit": false,
+                  "kind": "SymbolReference",
+                  "symbol": "items"
+                },
+                "function": {
+                  "body": {
+                    "kind": "Binary",
+                    "left": {
+                      "args": [],
+                      "explicit": false,
+                      "kind": "SymbolReference",
+                      "symbol": "items"
+                    },
+                    "op": "or",
+                    "right": {
+                      "args": [],
+                      "explicit": false,
+                      "kind": "SymbolReference",
+                      "symbol": "items"
+                    }
+                  },
+                  "parameters": []
+                },
+                "kind": "Then"
+              },
+              "name": "ThenLoosest"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "argument": {
+                  "args": [],
+                  "explicit": false,
+                  "kind": "SymbolReference",
+                  "symbol": "items"
+                },
+                "function": {
+                  "body": {
+                    "kind": "Binary",
+                    "left": {
+                      "cardMod": "none",
+                      "kind": "Binary",
+                      "left": {
+                        "args": [],
+                        "explicit": false,
+                        "kind": "SymbolReference",
+                        "symbol": "flag"
+                      },
+                      "op": "=",
+                      "right": {
+                        "kind": "Boolean",
+                        "value": true
+                      }
+                    },
+                    "op": "and",
+                    "right": {
+                      "cardMod": "none",
+                      "kind": "Binary",
+                      "left": {
+                        "args": [],
+                        "explicit": false,
+                        "kind": "SymbolReference",
+                        "symbol": "flag"
+                      },
+                      "op": "=",
+                      "right": {
+                        "kind": "Boolean",
+                        "value": true
+                      }
+                    }
+                  },
+                  "parameters": []
+                },
+                "kind": "Then"
+              },
+              "name": "ThenVsLogic"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "argument": {
+                  "argument": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "items"
+                  },
+                  "function": {
+                    "body": {
+                      "args": [],
+                      "explicit": false,
+                      "kind": "SymbolReference",
+                      "symbol": "items"
+                    },
+                    "parameters": []
+                  },
+                  "kind": "Then"
+                },
+                "function": {
+                  "body": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "items"
+                  },
+                  "parameters": []
+                },
+                "kind": "Then"
+              },
+              "name": "ThenChain"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "else": {
+                  "args": [],
+                  "explicit": false,
+                  "kind": "SymbolReference",
+                  "symbol": "items"
+                },
+                "full": true,
+                "if": {
+                  "cardMod": "none",
+                  "kind": "Binary",
+                  "left": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "flag"
+                  },
+                  "op": "=",
+                  "right": {
+                    "kind": "Boolean",
+                    "value": true
+                  }
+                },
+                "kind": "Conditional",
+                "then": {
+                  "args": [],
+                  "explicit": false,
+                  "kind": "SymbolReference",
+                  "symbol": "items"
+                }
+              },
+              "name": "IfBranches"
+            },
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "else": {
+                  "cardMod": "none",
+                  "kind": "Binary",
+                  "left": {
+                    "args": [],
+                    "explicit": false,
+                    "kind": "SymbolReference",
+                    "symbol": "two"
+                  },
+                  "op": "=",
+                  "right": {
+                    "kind": "Int",
+                    "text": "1"
+                  }
+                },
+                "full": true,
+                "if": {
+                  "args": [],
+                  "explicit": false,
+                  "kind": "SymbolReference",
+                  "symbol": "flag"
+                },
+                "kind": "Conditional",
+                "then": {
+                  "args": [],
+                  "explicit": false,
+                  "kind": "SymbolReference",
+                  "symbol": "one"
+                }
+              },
+              "name": "IfInEquality"
+            }
+          ],
+          "definition": "Wave 3: binary operator matrix, exact precedence and associativity",
+          "docReferences": [],
+          "kind": "Data",
+          "name": "Test",
+          "superType": null
+        }
+      ],
+      "imports": [],
+      "name": "case.rosetta",
+      "namespace": "test.expressions.precedence",
+      "overridden": false,
+      "scope": null,
+      "version": "1.0.0"
+    }
+  ],
+  "format": "sigil-model/1",
+  "syntaxDiagnostics": []
+}

@@ -6,6 +6,7 @@ members = [
     "crates/sigil-model",
     "crates/sigil-resolve",
     "crates/sigil-cli",
+    "crates/sigil-lsp",
 ]
 
 [workspace.package]
@@ -22,6 +23,7 @@ sigil-diag = { path = "crates/sigil-diag" }
 sigil-syntax = { path = "crates/sigil-syntax" }
 sigil-model = { path = "crates/sigil-model" }
 sigil-resolve = { path = "crates/sigil-resolve" }
+sigil-lsp = { path = "crates/sigil-lsp" }
 
 [profile.release]
 lto = "thin"

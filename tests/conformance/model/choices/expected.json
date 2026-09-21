@@ -3,9 +3,20 @@
     {
       "code": "E0101",
       "file": "case.rosetta",
+      "location": "case.rosetta:10:2",
       "message": "unknown type 'Natural'",
       "path": "type NaturalOrLegal.attributes[1]",
-      "severity": "error"
+      "severity": "error",
+      "span": {
+        "end": {
+          "column": 1,
+          "line": 11
+        },
+        "start": {
+          "column": 2,
+          "line": 10
+        }
+      }
     }
   ],
   "files": [
@@ -683,6 +694,7 @@
               }
             }
           ],
+          "conditions": [],
           "definition": null,
           "docReferences": [],
           "kind": "Data",
@@ -730,6 +742,20 @@
                 "name": "Natural",
                 "resolved": null
               }
+            }
+          ],
+          "conditions": [
+            {
+              "annotations": [],
+              "definition": null,
+              "docReferences": [],
+              "expression": {
+                "argument": {
+                  "kind": "ImplicitVariable"
+                },
+                "kind": "OneOf"
+              },
+              "name": "Choice"
             }
           ],
           "definition": "Person or company",

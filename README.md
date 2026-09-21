@@ -14,17 +14,26 @@ differentially against the Java implementation.
 See [docs/compatibility.md](docs/compatibility.md) for the concept matrix,
 milestones and diagnostic codes.
 
-## Status (Milestone 1)
+## Status
 
-- Parses 31/31 of the `.rosetta` files shipped in the rune-dsl repository
-  (unsupported constructs — `func`, rules, reports, expressions — are
-  recognised, warned (`W0001`) and skipped).
-- Resolves type and annotation references across files, honouring imports,
-  aliases, same-namespace visibility and the built-in `com.rosetta.model`
-  library.
-- Emits diagnostics: unknown types/annotations, duplicate definitions,
-  inheritance cycles, wrong-kind references.
-- Differential testing against the Java oracle (see below).
+- **Milestone 1 (model + resolution)**: parses all 31 `.rosetta` files in the
+  rune-dsl repository; resolves type/annotation references across files with
+  Xtext-faithful scoping; diagnostics with real source spans.
+- **Milestone 2 (expressions)**: full expression grammar with a
+  parser-independent IR, precedence-faithful parsing, a pretty-printer with
+  proptest round-trip verification, and type-level `condition` support.
+- **Milestone 2.5 (functions, rules, reports)**: `func` (inputs/output/
+  aliases/operations/post-conditions/dispatch), `reporting`/`eligibility
+  rule`, `report`, `rule source`, `schema`, `body`/`corpus`/`segment`,
+  `metaType` — with function-scoped name resolution mirroring the Java
+  implementation. `W0001` is retired; the full language surface parses.
+- **Milestone 3 (LSP)**: `sigil-lsp` on `lsp-server` — incremental sync,
+  publishDiagnostics, documentSymbol, cross-file definition, hover,
+  context-aware completion, references, workspace symbols; VS Code
+  extension in `editors/vscode`; see [docs/lsp.md](docs/lsp.md).
+- **Differential testing**: 6 oracle fixtures (incl. an 88-condition
+  expression corpus) match the Java implementation's resolved EMF model
+  exactly.
 
 ## Workspace
 

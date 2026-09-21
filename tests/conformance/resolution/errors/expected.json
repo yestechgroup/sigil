@@ -3,37 +3,92 @@
     {
       "code": "E0104",
       "file": "case.rosetta",
+      "location": "case.rosetta:18:1",
       "message": "duplicate definition of 'res.errors.Dup'",
       "path": "Dup",
-      "severity": "error"
+      "severity": "error",
+      "span": {
+        "end": {
+          "column": 1,
+          "line": 20
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
     },
     {
       "code": "E0101",
       "file": "case.rosetta",
+      "location": "case.rosetta:10:10",
       "message": "unknown type 'Unknown'",
       "path": "type Broken.attributes[0]",
-      "severity": "error"
+      "severity": "error",
+      "span": {
+        "end": {
+          "column": 18,
+          "line": 10
+        },
+        "start": {
+          "column": 10,
+          "line": 10
+        }
+      }
     },
     {
       "code": "E0102",
       "file": "case.rosetta",
+      "location": "case.rosetta:11:3",
       "message": "unknown annotation 'notAnAnnotation'",
       "path": "type Broken.attributes[0]",
-      "severity": "error"
+      "severity": "error",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 12
+        },
+        "start": {
+          "column": 3,
+          "line": 11
+        }
+      }
     },
     {
       "code": "E0103",
       "file": "case.rosetta",
+      "location": "case.rosetta:13:3",
       "message": "annotation 'com.rosetta.model.metadata' has no attribute 'bogus'",
       "path": "type Broken.attributes[1]",
-      "severity": "error"
+      "severity": "error",
+      "span": {
+        "end": {
+          "column": 1,
+          "line": 15
+        },
+        "start": {
+          "column": 3,
+          "line": 13
+        }
+      }
     },
     {
       "code": "E0105",
       "file": "case.rosetta",
+      "location": "case.rosetta:3:1",
       "message": "inheritance cycle involving 'res.errors.LoopA'",
       "path": "res.errors.LoopA",
-      "severity": "error"
+      "severity": "error",
+      "span": {
+        "end": {
+          "column": 1,
+          "line": 6
+        },
+        "start": {
+          "column": 1,
+          "line": 3
+        }
+      }
     }
   ],
   "files": [
@@ -702,6 +757,7 @@
               }
             }
           ],
+          "conditions": [],
           "definition": null,
           "docReferences": [],
           "kind": "Data",
@@ -731,6 +787,7 @@
               }
             }
           ],
+          "conditions": [],
           "definition": null,
           "docReferences": [],
           "kind": "Data",
@@ -793,6 +850,7 @@
               }
             }
           ],
+          "conditions": [],
           "definition": null,
           "docReferences": [],
           "kind": "Data",
@@ -818,6 +876,7 @@
               }
             }
           ],
+          "conditions": [],
           "definition": null,
           "docReferences": [],
           "kind": "Data",
@@ -843,6 +902,7 @@
               }
             }
           ],
+          "conditions": [],
           "definition": null,
           "docReferences": [],
           "kind": "Data",
