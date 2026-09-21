@@ -64,6 +64,73 @@ impl ResolutionDiagnostic {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ElementId(pub usize);
 
+/// The declared kind of a top-level model element: one per
+/// [`SemanticElement`] variant (i.e. one per EClass of the Rune metamodel
+/// that appears as a model root).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ElementKind {
+    Data,
+    Enumeration,
+    Annotation,
+    TypeAlias,
+    BasicType,
+    RecordType,
+    LibraryFunction,
+    Function,
+    Rule,
+    Report,
+    ExternalRuleSource,
+    Schema,
+    Body,
+    Corpus,
+    Segment,
+    MetaType,
+}
+
+impl ElementKind {
+    /// Every kind, in [`SemanticElement`] variant order.
+    pub const ALL: &'static [ElementKind] = &[
+        ElementKind::Data,
+        ElementKind::Enumeration,
+        ElementKind::Annotation,
+        ElementKind::TypeAlias,
+        ElementKind::BasicType,
+        ElementKind::RecordType,
+        ElementKind::LibraryFunction,
+        ElementKind::Function,
+        ElementKind::Rule,
+        ElementKind::Report,
+        ElementKind::ExternalRuleSource,
+        ElementKind::Schema,
+        ElementKind::Body,
+        ElementKind::Corpus,
+        ElementKind::Segment,
+        ElementKind::MetaType,
+    ];
+
+    /// The kind of `element`.
+    pub fn of(element: &SemanticElement) -> ElementKind {
+        match element {
+            SemanticElement::Data(_) => ElementKind::Data,
+            SemanticElement::Enumeration(_) => ElementKind::Enumeration,
+            SemanticElement::Annotation(_) => ElementKind::Annotation,
+            SemanticElement::TypeAlias(_) => ElementKind::TypeAlias,
+            SemanticElement::BasicType(_) => ElementKind::BasicType,
+            SemanticElement::RecordType(_) => ElementKind::RecordType,
+            SemanticElement::LibraryFunction(_) => ElementKind::LibraryFunction,
+            SemanticElement::Function(_) => ElementKind::Function,
+            SemanticElement::Rule(_) => ElementKind::Rule,
+            SemanticElement::Report(_) => ElementKind::Report,
+            SemanticElement::ExternalRuleSource(_) => ElementKind::ExternalRuleSource,
+            SemanticElement::Schema(_) => ElementKind::Schema,
+            SemanticElement::Body(_) => ElementKind::Body,
+            SemanticElement::Corpus(_) => ElementKind::Corpus,
+            SemanticElement::Segment(_) => ElementKind::Segment,
+            SemanticElement::MetaType(_) => ElementKind::MetaType,
+        }
+    }
+}
+
 /// Resolution result: the fully-populated model plus diagnostics.
 pub struct Resolution {
     /// Builtin files first, then user files in submission order.
@@ -79,6 +146,54 @@ pub struct Resolution {
 impl Resolution {
     pub fn qname(&self, id: ElementId) -> &str {
         &self.element_names[id.0]
+    }
+
+    /// The element with flat id `id`.
+    pub fn element(&self, id: ElementId) -> &SemanticElement {
+        let mut count = 0usize;
+        for file in &self.files {
+            if id.0 < count + file.elements.len() {
+                return &file.elements[id.0 - count];
+            }
+            count += file.elements.len();
+        }
+        unreachable!("element id out of range")
+    }
+
+    /// The declared kind of the element with flat id `id`.
+    pub fn kind_of(&self, id: ElementId) -> ElementKind {
+        ElementKind::of(self.element(id))
+    }
+
+    /// All elements of `kind`, as `(id, element)` pairs ordered by
+    /// [`ElementId`] (i.e. declaration order). Includes builtins; use
+    /// [`Resolution::user_files`] bounds or filter by `id.0 >= 2` scope to
+    /// exclude them — the builtin prefix is always exactly two files.
+    pub fn elements_of_kind(&self, kind: ElementKind) -> Vec<(ElementId, &SemanticElement)> {
+        (0..self.element_names.len())
+            .map(ElementId)
+            .filter(|&id| self.kind_of(id) == kind)
+            .map(|id| (id, self.element(id)))
+            .collect()
+    }
+
+    /// The first element whose fully-qualified name is `name`, falling back
+    /// to the first whose simple (unqualified) name matches; `None` when no
+    /// element matches. Anonymous elements (reports) have no name and are
+    /// never returned by the simple-name fallback.
+    pub fn find_by_name(&self, name: &str) -> Option<(ElementId, &SemanticElement)> {
+        if let Some(pos) = self.element_names.iter().position(|n| n == name) {
+            return Some((ElementId(pos), self.element(ElementId(pos))));
+        }
+        (0..self.element_names.len())
+            .map(ElementId)
+            .find(|&id| {
+                let qname = &self.element_names[id.0];
+                !qname.is_empty()
+                    && qname.rsplit('.').next().unwrap_or(qname) == name
+                    && ElementKind::of(self.element(id)) != ElementKind::Report
+            })
+            .map(|id| (id, self.element(id)))
     }
 
     pub fn user_files(&self) -> &[ModelFile] {
@@ -1063,14 +1178,7 @@ fn simple_name(qname: &str) -> &str {
 }
 
 fn element_at(res: &Resolution, id: ElementId) -> &SemanticElement {
-    let mut count = 0usize;
-    for file in &res.files {
-        if id.0 < count + file.elements.len() {
-            return &file.elements[id.0 - count];
-        }
-        count += file.elements.len();
-    }
-    unreachable!("element id out of range")
+    res.element(id)
 }
 
 /// The features visible on an instance of the type with flat id `id`:
