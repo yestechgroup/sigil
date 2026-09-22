@@ -286,7 +286,17 @@ pub(crate) fn int_lit<'src>() -> impl Parser<'src, &'src str, i128, AErr<'src>> 
 /// than a greedy scan so that a trailing `-` (as in `2.0->>x`) is never
 /// swallowed.
 pub(crate) fn number_lit<'src>() -> impl Parser<'src, &'src str, String, AErr<'src>> + Clone {
-    let digits = || text::int(10).map(|digits: &str| digits.to_owned());
+    // Xtext's `INT` terminal is `('0'..'9')+`; chumsky's `text::int`
+    // additionally forbids leading zeros (`[1-9][0-9]* | 0`), which would
+    // reject fraction parts like `0.01` or `1.00` and exponents like `1e01`.
+    let digits = || {
+        any()
+            .filter(|c: &char| c.is_ascii_digit())
+            .repeated()
+            .at_least(1)
+            .to_slice()
+            .map(|digits: &str| digits.to_owned())
+    };
     let core = just(".")
         .ignore_then(digits())
         .map(|fraction| format!(".{fraction}"))
@@ -925,6 +935,11 @@ fn annotation_decl<'src>() -> impl Parser<'src, &'src str, AnnotationDecl, AErr<
 }
 
 fn type_alias<'src>() -> impl Parser<'src, &'src str, TypeAliasDef, AErr<'src>> + Clone {
+    // Grammar rule `RosettaTypeAlias`: `'typeAlias' RosettaNamed
+    // TypeParameters? ':' RosettaDefinable? RosettaTyped Annotations*
+    // conditions += Condition*` — a type alias owns conditions directly
+    // (e.g. CDM's `typeAlias FpMLCodingScheme(...)` /
+    // `condition IsValidCodingScheme:`).
     kw("typeAlias")
         .ignore_then(name())
         .then(type_parameters())
@@ -932,8 +947,14 @@ fn type_alias<'src>() -> impl Parser<'src, &'src str, TypeAliasDef, AErr<'src>> 
         .then(definable())
         .then(type_call())
         .then(references_and_annotations())
+        .then(
+            crate::expr::condition_def(kw("condition"), crate::expr::expression())
+                .repeated()
+                .collect::<Vec<_>>(),
+        )
         .map_with(
-            |((((name, parameters), definition), type_call), (docs, annos, _, _)), ex| {
+            |(((((name, parameters), definition), type_call), (docs, annos, _, _)), conditions),
+             ex| {
                 TypeAliasDef {
                     name,
                     parameters,
@@ -941,6 +962,7 @@ fn type_alias<'src>() -> impl Parser<'src, &'src str, TypeAliasDef, AErr<'src>> 
                     type_call,
                     doc_references: docs,
                     annotations: annos,
+                    conditions,
                     span: span_of(ex.span()),
                 }
             },
@@ -1734,6 +1756,107 @@ mod tests {
         let (unit, diags) = parse(&file);
         assert!(diags.is_empty(), "unexpected diagnostics: {diags:#?}");
         unit.unwrap()
+    }
+
+    #[test]
+    fn parses_multi_digit_fraction_literals() {
+        fn num(src: &str) -> String {
+            number_lit()
+                .then_ignore(end())
+                .parse(src)
+                .into_result()
+                .unwrap_or_else(|e| panic!("{src} should be a number literal: {e:?}"))
+        }
+        // One fraction digit (already worked).
+        assert_eq!(num("0.5"), "0.5");
+        // Multiple fraction digits (Xtext `BigDecimal`: INT is `digit+`).
+        assert_eq!(num("0.01"), "0.01");
+        assert_eq!(num("1.00"), "1.00");
+        assert_eq!(num("123.456"), "123.456");
+        assert_eq!(num("0.0"), "0.0");
+        // Leading zeros in exponents too (`('e'|'E') INT`).
+        assert_eq!(num("1.5e10"), "1.5e10");
+        assert_eq!(num("1.0e01"), "1.0e01");
+        // Bare `INT '.'` stays parseable, but `..` is never a fraction.
+        assert_eq!(num("1."), "1.");
+        assert!(number_lit().then_ignore(end()).parse("1..1").has_errors());
+        // A fraction is required: a bare integer (or `1e01`) is `Integer`,
+        // not `BigDecimal`.
+        assert!(number_lit().then_ignore(end()).parse("123").has_errors());
+        assert!(number_lit().then_ignore(end()).parse("1e01").has_errors());
+    }
+
+    #[test]
+    fn parses_fractions_inside_expressions() {
+        let unit =
+            parse_ok("namespace t\ntype T:\n\tcondition C: x * 0.01\n\tcondition D: y + 1.00\n");
+        match &unit.elements[0] {
+            Element::Data(d) => {
+                assert_eq!(d.conditions.len(), 2);
+                let printed = format!("{:?}", d.conditions[0].expression);
+                assert!(printed.contains("0.01"), "0.01 lost: {printed}");
+                let printed = format!("{:?}", d.conditions[1].expression);
+                assert!(printed.contains("1.00"), "1.00 lost: {printed}");
+            }
+            other => panic!("expected data, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn cardinality_ranges_still_parse() {
+        let unit =
+            parse_ok("namespace t\ntype T:\n\tx int (1..1)\n\ty int (0..*)\n\tz int (0..10)\n");
+        match &unit.elements[0] {
+            Element::Data(d) => {
+                assert_eq!(d.attributes[0].cardinality.to_constraint_string(), "(1..1)");
+                assert_eq!(d.attributes[1].cardinality.to_constraint_string(), "(0..*)");
+                assert_eq!(
+                    d.attributes[2].cardinality.to_constraint_string(),
+                    "(0..10)"
+                );
+            }
+            other => panic!("expected data, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parses_type_alias_with_condition() {
+        let unit = parse_ok(
+            "namespace t\n\
+             typeAlias FpMLCodingScheme(domain string):\n\
+             \tstring\n\
+             \n\
+             \tcondition IsValidCodingScheme:\n\
+             \t\tif item exists\n\
+             \t\tthen ValidateFpMLCodingSchemeDomain(item, domain)\n\
+             \n\
+             typeAlias BusinessCenter: FpMLCodingScheme(domain: \"business-center\")\n",
+        );
+        assert_eq!(unit.elements.len(), 2);
+        match &unit.elements[0] {
+            Element::TypeAlias(t) => {
+                assert_eq!(t.name, "FpMLCodingScheme");
+                assert_eq!(t.conditions.len(), 1);
+                assert_eq!(t.conditions[0].name.as_deref(), Some("IsValidCodingScheme"));
+            }
+            other => panic!("expected type alias, got {other:?}"),
+        }
+        match &unit.elements[1] {
+            Element::TypeAlias(t) => {
+                assert_eq!(t.name, "BusinessCenter");
+                assert!(t.conditions.is_empty());
+            }
+            other => panic!("expected type alias, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parses_type_with_condition_still_works() {
+        let unit = parse_ok("namespace t\ntype T:\n\tx int (1..1)\n\tcondition C: True\n");
+        match &unit.elements[0] {
+            Element::Data(d) => assert_eq!(d.conditions.len(), 1),
+            other => panic!("expected data, got {other:?}"),
+        }
     }
 
     #[test]

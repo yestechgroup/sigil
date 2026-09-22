@@ -357,6 +357,10 @@ pub struct AnnotationDecl {
 }
 
 /// `typeAlias int(digits int, min int, max int): number(...)`
+///
+/// Grammar-faithful body: `RosettaTyped Annotations* conditions += Condition*`
+/// (the reference grammar lets a type alias own conditions directly, e.g.
+/// CDM's `typeAlias FpMLCodingScheme(...)` with `condition IsValidCodingScheme:`).
 #[derive(Debug, Clone)]
 pub struct TypeAliasDef {
     pub name: String,
@@ -365,6 +369,7 @@ pub struct TypeAliasDef {
     pub type_call: TypeCall,
     pub doc_references: Vec<DocReference>,
     pub annotations: Vec<AnnotationRef>,
+    pub conditions: Vec<ConditionDef>,
     pub span: Span,
 }
 

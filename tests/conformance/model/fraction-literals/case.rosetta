@@ -1,0 +1,36 @@
+namespace test.model.fractions
+
+type Pricing:
+	unitPrice number (1..1)
+	rate number (1..1)
+	scaling int (1..1)
+
+	condition PositiveScale:
+		scaling * 0.01 >= 0
+	condition RateIsExact:
+		rate = 1.00
+
+typeAlias CodedRate(code string):
+	number
+
+	condition ValidRate:
+		if item exists
+		then RateFloor(item)
+
+typeAlias DefaultRate: CodedRate(code: "default")
+
+func Scale:
+	inputs:
+		value number (1..1)
+	output:
+		result number (1..1)
+
+	alias factor: 0.01
+
+	condition ValuePresent:
+		value exists
+
+	set result:
+		value * factor
+	add result:
+		0.01 * value
