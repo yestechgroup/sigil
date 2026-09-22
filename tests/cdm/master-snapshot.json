@@ -1,0 +1,448 @@
+{
+  "corpus": {
+    "files": 145,
+    "lines": 44137
+  },
+  "elements": {
+    "annotation": 1,
+    "basicType": 0,
+    "body": 4,
+    "corpus": 32,
+    "data": 779,
+    "enumeration": 280,
+    "externalRuleSource": 0,
+    "function": 1318,
+    "libraryFunction": 0,
+    "metaType": 6,
+    "recordType": 0,
+    "report": 0,
+    "rule": 0,
+    "schema": 0,
+    "segment": 15,
+    "typeAlias": 17
+  },
+  "masterSha": "eb0eea955ef8409f034e1a9c28714d00a511a61a",
+  "parse": {
+    "diagnosticsByCode": {},
+    "failed": 0,
+    "ok": 145,
+    "perFile": {
+      "base-datetime-daycount-enum.rosetta": "ok",
+      "base-datetime-daycount-func.rosetta": "ok",
+      "base-datetime-enum.rosetta": "ok",
+      "base-datetime-func.rosetta": "ok",
+      "base-datetime-type.rosetta": "ok",
+      "base-desc.rosetta": "ok",
+      "base-math-enum.rosetta": "ok",
+      "base-math-func.rosetta": "ok",
+      "base-math-type.rosetta": "ok",
+      "base-math-util-func.rosetta": "ok",
+      "base-staticdata-asset-commodity-enum.rosetta": "ok",
+      "base-staticdata-asset-common-enum.rosetta": "ok",
+      "base-staticdata-asset-common-func.rosetta": "ok",
+      "base-staticdata-asset-common-type.rosetta": "ok",
+      "base-staticdata-asset-credit-enum.rosetta": "ok",
+      "base-staticdata-asset-credit-type.rosetta": "ok",
+      "base-staticdata-asset-desc.rosetta": "ok",
+      "base-staticdata-asset-rates-enum.rosetta": "ok",
+      "base-staticdata-codelist-func.rosetta": "ok",
+      "base-staticdata-codelist-type.rosetta": "ok",
+      "base-staticdata-desc.rosetta": "ok",
+      "base-staticdata-identifier-enum.rosetta": "ok",
+      "base-staticdata-identifier-type.rosetta": "ok",
+      "base-staticdata-party-enum.rosetta": "ok",
+      "base-staticdata-party-func.rosetta": "ok",
+      "base-staticdata-party-type.rosetta": "ok",
+      "event-common-enum.rosetta": "ok",
+      "event-common-func.rosetta": "ok",
+      "event-common-type.rosetta": "ok",
+      "event-instructioncomposition-enum.rosetta": "ok",
+      "event-instructioncomposition-func.rosetta": "ok",
+      "event-instructioncomposition-reset-enum.rosetta": "ok",
+      "event-instructioncomposition-reset-func.rosetta": "ok",
+      "event-instructioncomposition-reset-type.rosetta": "ok",
+      "event-instructioncomposition-type.rosetta": "ok",
+      "event-position-enum.rosetta": "ok",
+      "event-position-func.rosetta": "ok",
+      "event-position-type.rosetta": "ok",
+      "event-qualification-func.rosetta": "ok",
+      "event-workflow-enum.rosetta": "ok",
+      "event-workflow-func.rosetta": "ok",
+      "event-workflow-type.rosetta": "ok",
+      "ingest-fpml-confirmation-common-func.rosetta": "ok",
+      "ingest-fpml-confirmation-datetime-func.rosetta": "ok",
+      "ingest-fpml-confirmation-header-func.rosetta": "ok",
+      "ingest-fpml-confirmation-legal-func.rosetta": "ok",
+      "ingest-fpml-confirmation-message-func.rosetta": "ok",
+      "ingest-fpml-confirmation-other-func.rosetta": "ok",
+      "ingest-fpml-confirmation-party-func.rosetta": "ok",
+      "ingest-fpml-confirmation-payment-func.rosetta": "ok",
+      "ingest-fpml-confirmation-pricequantity-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-bondoption-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-brokerequityoption-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-capfloor-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-commodityforward-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-commodityoption-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-commodityswap-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-commodityswaption-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-correlationswap-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-creditdefaultswap-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-creditdefaultswapoption-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-dividendswapoptiontransactionsupplement-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-dividendswaptransactionsupplement-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-equityforward-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-equityoption-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-equityoptiontransactionsupplement-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-equityswaptransactionsupplement-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-fra-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-fxdigitaloption-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-fxoption-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-fxsingleleg-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-fxswap-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-fxvarianceswap-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-fxvolatilityswap-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-genericproduct-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-returnswap-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-swap-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-swaption-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-varianceoptiontransactionsupplement-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-varianceswap-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-varianceswaptransactionsupplement-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-volatilityswap-func.rosetta": "ok",
+      "ingest-fpml-confirmation-product-volatilityswaptransactionsupplement-func.rosetta": "ok",
+      "ingest-fpml-confirmation-settlement-func.rosetta": "ok",
+      "ingest-fpml-confirmation-tradestate-func.rosetta": "ok",
+      "ingest-fpml-confirmation-workflowstep-func.rosetta": "ok",
+      "legaldocumentation-common-enum.rosetta": "ok",
+      "legaldocumentation-common-type.rosetta": "ok",
+      "legaldocumentation-csa-enum.rosetta": "ok",
+      "legaldocumentation-csa-func.rosetta": "ok",
+      "legaldocumentation-csa-type.rosetta": "ok",
+      "legaldocumentation-desc.rosetta": "ok",
+      "legaldocumentation-master-enum.rosetta": "ok",
+      "legaldocumentation-master-icma-type.rosetta": "ok",
+      "legaldocumentation-master-isda-enum.rosetta": "ok",
+      "legaldocumentation-master-isda-type.rosetta": "ok",
+      "legaldocumentation-master-isla-enum.rosetta": "ok",
+      "legaldocumentation-master-isla-type.rosetta": "ok",
+      "legaldocumentation-master-type.rosetta": "ok",
+      "legaldocumentation-transaction-additionalterms-enum.rosetta": "ok",
+      "legaldocumentation-transaction-additionalterms-type.rosetta": "ok",
+      "legaldocumentation-transaction-enum.rosetta": "ok",
+      "legaldocumentation-transaction-type.rosetta": "ok",
+      "margin-schedule-enum.rosetta": "ok",
+      "margin-schedule-func.rosetta": "ok",
+      "margin-schedule-type.rosetta": "ok",
+      "observable-asset-calculatedrate-enum.rosetta": "ok",
+      "observable-asset-calculatedrate-func.rosetta": "ok",
+      "observable-asset-calculatedrate-type.rosetta": "ok",
+      "observable-asset-enum.rosetta": "ok",
+      "observable-asset-fro-enum.rosetta": "ok",
+      "observable-asset-fro-func.rosetta": "ok",
+      "observable-asset-fro-type.rosetta": "ok",
+      "observable-asset-func.rosetta": "ok",
+      "observable-asset-type.rosetta": "ok",
+      "observable-common-enum.rosetta": "ok",
+      "observable-common-func.rosetta": "ok",
+      "observable-desc.rosetta": "ok",
+      "observable-event-enum.rosetta": "ok",
+      "observable-event-func.rosetta": "ok",
+      "observable-event-type.rosetta": "ok",
+      "product-asset-calculation-func.rosetta": "ok",
+      "product-asset-enum.rosetta": "ok",
+      "product-asset-floatingrate-enum.rosetta": "ok",
+      "product-asset-floatingrate-func.rosetta": "ok",
+      "product-asset-floatingrate-type.rosetta": "ok",
+      "product-asset-func.rosetta": "ok",
+      "product-asset-type.rosetta": "ok",
+      "product-collateral-enum.rosetta": "ok",
+      "product-collateral-func.rosetta": "ok",
+      "product-collateral-type.rosetta": "ok",
+      "product-common-enum.rosetta": "ok",
+      "product-common-func.rosetta": "ok",
+      "product-common-schedule-enum.rosetta": "ok",
+      "product-common-schedule-func.rosetta": "ok",
+      "product-common-schedule-type.rosetta": "ok",
+      "product-common-settlement-enum.rosetta": "ok",
+      "product-common-settlement-func.rosetta": "ok",
+      "product-common-settlement-type.rosetta": "ok",
+      "product-common-type.rosetta": "ok",
+      "product-desc.rosetta": "ok",
+      "product-qualification-func.rosetta": "ok",
+      "product-template-enum.rosetta": "ok",
+      "product-template-func.rosetta": "ok",
+      "product-template-type.rosetta": "ok"
+    }
+  },
+  "resolution": {
+    "diagnosticsByCode": {
+      "E0101": 3819,
+      "E0104": 30,
+      "E0106": 2,
+      "E0107": 66
+    },
+    "perFile": {
+      "base-datetime-daycount-func.rosetta": {
+        "E0101": 72,
+        "E0104": 20,
+        "E0107": 20
+      },
+      "base-datetime-func.rosetta": {
+        "E0101": 4
+      },
+      "base-math-func.rosetta": {
+        "E0101": 1
+      },
+      "base-math-type.rosetta": {
+        "E0101": 2
+      },
+      "base-staticdata-asset-common-func.rosetta": {
+        "E0107": 1
+      },
+      "base-staticdata-asset-common-type.rosetta": {
+        "E0101": 28
+      },
+      "base-staticdata-party-func.rosetta": {
+        "E0101": 4
+      },
+      "base-staticdata-party-type.rosetta": {
+        "E0101": 2
+      },
+      "event-common-func.rosetta": {
+        "E0101": 41,
+        "E0107": 13
+      },
+      "event-common-type.rosetta": {
+        "E0101": 12
+      },
+      "event-instructioncomposition-reset-func.rosetta": {
+        "E0101": 4
+      },
+      "event-instructioncomposition-type.rosetta": {
+        "E0101": 2
+      },
+      "event-position-func.rosetta": {
+        "E0101": 1
+      },
+      "event-qualification-func.rosetta": {
+        "E0101": 24
+      },
+      "ingest-fpml-confirmation-common-func.rosetta": {
+        "E0101": 99
+      },
+      "ingest-fpml-confirmation-datetime-func.rosetta": {
+        "E0101": 88,
+        "E0107": 5
+      },
+      "ingest-fpml-confirmation-header-func.rosetta": {
+        "E0101": 16,
+        "E0107": 1
+      },
+      "ingest-fpml-confirmation-legal-func.rosetta": {
+        "E0101": 25
+      },
+      "ingest-fpml-confirmation-message-func.rosetta": {
+        "E0101": 13
+      },
+      "ingest-fpml-confirmation-other-func.rosetta": {
+        "E0101": 1948
+      },
+      "ingest-fpml-confirmation-party-func.rosetta": {
+        "E0101": 93,
+        "E0107": 1
+      },
+      "ingest-fpml-confirmation-payment-func.rosetta": {
+        "E0101": 104,
+        "E0107": 2
+      },
+      "ingest-fpml-confirmation-pricequantity-func.rosetta": {
+        "E0101": 297
+      },
+      "ingest-fpml-confirmation-product-bondoption-func.rosetta": {
+        "E0101": 9
+      },
+      "ingest-fpml-confirmation-product-brokerequityoption-func.rosetta": {
+        "E0101": 6
+      },
+      "ingest-fpml-confirmation-product-capfloor-func.rosetta": {
+        "E0101": 8
+      },
+      "ingest-fpml-confirmation-product-commodityforward-func.rosetta": {
+        "E0101": 7
+      },
+      "ingest-fpml-confirmation-product-commodityoption-func.rosetta": {
+        "E0101": 21
+      },
+      "ingest-fpml-confirmation-product-commodityswap-func.rosetta": {
+        "E0101": 48
+      },
+      "ingest-fpml-confirmation-product-commodityswaption-func.rosetta": {
+        "E0101": 10
+      },
+      "ingest-fpml-confirmation-product-correlationswap-func.rosetta": {
+        "E0101": 7
+      },
+      "ingest-fpml-confirmation-product-creditdefaultswap-func.rosetta": {
+        "E0101": 48
+      },
+      "ingest-fpml-confirmation-product-creditdefaultswapoption-func.rosetta": {
+        "E0101": 22
+      },
+      "ingest-fpml-confirmation-product-dividendswapoptiontransactionsupplement-func.rosetta": {
+        "E0101": 6
+      },
+      "ingest-fpml-confirmation-product-dividendswaptransactionsupplement-func.rosetta": {
+        "E0101": 25
+      },
+      "ingest-fpml-confirmation-product-equityforward-func.rosetta": {
+        "E0101": 5
+      },
+      "ingest-fpml-confirmation-product-equityoption-func.rosetta": {
+        "E0101": 7
+      },
+      "ingest-fpml-confirmation-product-equityoptiontransactionsupplement-func.rosetta": {
+        "E0101": 6
+      },
+      "ingest-fpml-confirmation-product-equityswaptransactionsupplement-func.rosetta": {
+        "E0101": 5
+      },
+      "ingest-fpml-confirmation-product-fra-func.rosetta": {
+        "E0101": 18
+      },
+      "ingest-fpml-confirmation-product-fxdigitaloption-func.rosetta": {
+        "E0101": 5
+      },
+      "ingest-fpml-confirmation-product-fxoption-func.rosetta": {
+        "E0101": 19
+      },
+      "ingest-fpml-confirmation-product-fxsingleleg-func.rosetta": {
+        "E0101": 9
+      },
+      "ingest-fpml-confirmation-product-fxswap-func.rosetta": {
+        "E0101": 5
+      },
+      "ingest-fpml-confirmation-product-fxvarianceswap-func.rosetta": {
+        "E0101": 16
+      },
+      "ingest-fpml-confirmation-product-fxvolatilityswap-func.rosetta": {
+        "E0101": 13
+      },
+      "ingest-fpml-confirmation-product-genericproduct-func.rosetta": {
+        "E0101": 21
+      },
+      "ingest-fpml-confirmation-product-returnswap-func.rosetta": {
+        "E0101": 44,
+        "E0107": 1
+      },
+      "ingest-fpml-confirmation-product-swap-func.rosetta": {
+        "E0101": 77,
+        "E0106": 2,
+        "E0107": 1
+      },
+      "ingest-fpml-confirmation-product-swaption-func.rosetta": {
+        "E0101": 11
+      },
+      "ingest-fpml-confirmation-product-varianceoptiontransactionsupplement-func.rosetta": {
+        "E0101": 6
+      },
+      "ingest-fpml-confirmation-product-varianceswap-func.rosetta": {
+        "E0101": 9
+      },
+      "ingest-fpml-confirmation-product-varianceswaptransactionsupplement-func.rosetta": {
+        "E0101": 4
+      },
+      "ingest-fpml-confirmation-product-volatilityswap-func.rosetta": {
+        "E0101": 11
+      },
+      "ingest-fpml-confirmation-product-volatilityswaptransactionsupplement-func.rosetta": {
+        "E0101": 4
+      },
+      "ingest-fpml-confirmation-settlement-func.rosetta": {
+        "E0101": 68,
+        "E0107": 1
+      },
+      "ingest-fpml-confirmation-tradestate-func.rosetta": {
+        "E0101": 32
+      },
+      "ingest-fpml-confirmation-workflowstep-func.rosetta": {
+        "E0101": 85
+      },
+      "legaldocumentation-common-type.rosetta": {
+        "E0101": 2
+      },
+      "legaldocumentation-csa-func.rosetta": {
+        "E0107": 10
+      },
+      "legaldocumentation-csa-type.rosetta": {
+        "E0101": 10,
+        "E0104": 1
+      },
+      "legaldocumentation-master-isda-type.rosetta": {
+        "E0101": 12
+      },
+      "legaldocumentation-master-isla-type.rosetta": {
+        "E0101": 1
+      },
+      "legaldocumentation-master-type.rosetta": {
+        "E0101": 2
+      },
+      "margin-schedule-func.rosetta": {
+        "E0101": 49,
+        "E0107": 2
+      },
+      "observable-asset-calculatedrate-func.rosetta": {
+        "E0101": 11,
+        "E0104": 3,
+        "E0107": 3
+      },
+      "observable-asset-fro-func.rosetta": {
+        "E0101": 2
+      },
+      "observable-asset-func.rosetta": {
+        "E0101": 3
+      },
+      "observable-asset-type.rosetta": {
+        "E0101": 28
+      },
+      "observable-common-func.rosetta": {
+        "E0101": 12
+      },
+      "product-asset-calculation-func.rosetta": {
+        "E0101": 1
+      },
+      "product-asset-floatingrate-func.rosetta": {
+        "E0101": 24,
+        "E0104": 5,
+        "E0107": 5
+      },
+      "product-asset-func.rosetta": {
+        "E0101": 2
+      },
+      "product-asset-type.rosetta": {
+        "E0101": 9
+      },
+      "product-collateral-func.rosetta": {
+        "E0101": 14
+      },
+      "product-collateral-type.rosetta": {
+        "E0101": 8
+      },
+      "product-common-schedule-type.rosetta": {
+        "E0101": 2,
+        "E0104": 1
+      },
+      "product-common-settlement-type.rosetta": {
+        "E0101": 10
+      },
+      "product-qualification-func.rosetta": {
+        "E0101": 34
+      },
+      "product-template-func.rosetta": {
+        "E0101": 3
+      },
+      "product-template-type.rosetta": {
+        "E0101": 3
+      }
+    }
+  }
+}

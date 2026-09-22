@@ -165,7 +165,11 @@ the comparison stays meaningful):
 * function *dispatch* (`func F(x: Enum->VALUE)`) parses in 9.58.1 but its
   function-scoped references fail to link (the dispatch attribute, assign
   roots and path segments stay unresolved proxies), so dispatch functions
-  are covered by sigil-only conformance fixtures;
+  are covered by sigil-only conformance fixtures. The failure is specific
+  to runs where the dispatch target's file is not loaded into the same
+  JVM: over the whole-corpus CDM 6.7.0 differential (`--cdm`, Phase 2 of
+  issue #10) all 28 legacy dispatch links resolve on the oracle side and
+  match sigil, so there they are compared, not normalized away;
 * single-letter names (`enum E:`) are rejected by the 9.58.1 grammar
   (lexer collision with an internal token);
 * `docReference for <path>` (attribute-anchored references) exists in the
@@ -184,6 +188,42 @@ the comparison stays meaningful):
   EMF model; sigil mirrors that (`Expr::ImplicitVariable`), so both sides
   agree.
 
+Reverse-drift and cross-file-resolution caveats observed by the CDM 6.7.0
+differential (`python3 scripts/oracle_compare.py --cdm`; details and
+occurrence counts in `docs/cdm-conformance.md`, Phase 2):
+
+* **reverse drift — 9.56-era synonym syntax**: CDM 6.7.0 (SDK 9.56.0-era)
+  uses attribute-level `[synonym <source> value "..."]` qualifiers and
+  top-level `synonym source` declarations that main's grammar dropped.
+  9.58.1 still parses them; sigil rejects them — 18 of the corpus's 99
+  files (the exact set is re-derived and printed on every differential
+  run). Sigil stays strict: newer CDM replaced synonyms with ingest
+  mappings, and re-widening the grammar for dead syntax is explicitly out
+  of scope;
+* **`as`-cast divergence — no occurrences to exclude**: the `as` /
+  `as-key` operators do not exist in 9.58.1 (bullet above), and CDM 6.7.0
+  turned out to contain no `expr as Type` casts at all, so the
+  differential's skip list is empty. The genuine parse-*shape* divergence
+  on that corpus is instead the parameter-less `condition X: one-of`
+  form: both grammars define it as `OneOfOperation` over a derived
+  implicit `item` (which is what 9.58.1 emits), but sigil's parser
+  currently shapes it as `Binary("one", "-", "of")` — the differential
+  normalizes exactly that shape to the grammatical one (20 sites in 10
+  files; the fixtures' `currency one-of` has a left operand and already
+  agrees);
+* **cross-file reference resolution**: 9.58.1 resolves cross-references
+  only against the files loaded into the same JVM, and leaves
+  *cross-file* links unresolved that sigil resolves whole-workspace —
+  operation path segments beyond the function's own file, constructor
+  pair keys targeting another file's attributes, and (in single-file
+  runs) dispatch links and doc-reference bodies/corpora. The differential
+  therefore runs both tools whole-corpus and compares per-file slices;
+  what remains genuinely unresolved on the oracle side (path segment
+  chains, constructor pair keys) is normalized away, everything else is
+  compared. Its dumper can also drag a directly preceding `//` comment
+  into a cross-reference's source text; the differential trims reference
+  texts to their last line.
+
 `Choice.getConditions()` in the 9.58.1 Ecore model also returns a hardcoded
 `one-of item` condition when a choice declares none; sigil mirrors that
 derived behaviour in its canonical JSON.
@@ -198,3 +238,24 @@ serialization format documented at rune.finos.org serializes model
 *instances* (data objects with `@type`/`@key`/`@ref`), not the metamodel —
 it is implemented in the serialization phase (issue phase 8) where it
 actually applies.
+
+## Real-world corpus: the FINOS Common Domain Model
+
+Beyond the small oracle fixtures, sigil is gated on the full published
+**FINOS Common Domain Model** (CDM), pinned by SHA
+(`eb0eea955ef8409f034e1a9c28714d00a511a61a`, master; legacy tag `6.7.0`
+for the Phase 2 reverse-drift study): 145 `.rosetta` files, ~44k lines,
+parsed and resolved whole-workspace against a committed golden snapshot of
+parse status, diagnostics by code, and element counts
+(`tests/cdm/master-snapshot.json`). The corpus is **not** diagnostic-clean
+by design — it references the external `fpml.*` model (`E0101`s) and
+declares dispatch overloads that sigil flags as `E0104`s — so this is a
+sigil-only golden suite rather than an oracle comparison. The **legacy**
+pin (CDM 6.7.0) additionally gets a full value-level Java-oracle
+differential: `python3 scripts/oracle_compare.py --cdm` (issue #10
+Phase 2; 81 of 99 files compared against the 9.58.1 oracle after
+documented normalization — see `docs/cdm-conformance.md` and the
+reverse-drift caveats above). Fetch with `scripts/fetch-cdm.sh master` /
+`legacy` (auto-skips when absent); see `docs/cdm-conformance.md` for the
+full contract, the known-diagnostic landscape at the pin, and the
+license/attribution note (CSL 1.0).

@@ -21,6 +21,7 @@ python3 scripts/oracle_compare.py tests/oracle/model-basic.rosetta   # also swee
 
 - CLI (binary `sigil`, hand-rolled arg parsing, no clap): `cargo run -p sigil-cli -- parse|check|model <files...>`
 - Regenerate conformance fixtures: `UPDATE_EXPECT=1 cargo test -p sigil-cli --test conformance`
+- Deep gate (CDM golden corpus, issue #10): `scripts/fetch-cdm.sh master` then `cargo test -p sigil-cli --test cdm_conformance` — auto-skips (passes) when the corpus is absent; snapshot regen via `UPDATE_CDM_SNAPSHOT=1`. See `docs/cdm-conformance.md`.
 - Longer property-test runs: `PROPTEST_CASES=512 cargo test -p sigil-lsp`
 
 `cargo test` does **not** include Java-oracle parity on its own — the gate above runs it explicitly (any fixture invocation also sweeps the `tests/oracle/*.multi/` multi-file groups; see the script docstring):
