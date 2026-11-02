@@ -179,6 +179,89 @@ fn references_after_incremental_edit() {
     client.shutdown();
 }
 
+const SCHEMA_BASE: &str = r#"namespace test
+
+schema TradingSchema XML <"A serialization schema">
+"#;
+
+const TRANSFORMS: &str = r#"namespace test
+
+func IngestTrades:
+    [ingest TradingSchema]
+    output:
+        result number (1..1)
+
+func ProjectTrades:
+    [projection TradingSchema]
+    output:
+        result number (1..1)
+"#;
+
+#[test]
+fn references_find_transform_schema_usages() {
+    let tmp = TempDir::new("refs-transform");
+    let base = tmp.write("base.rosetta", SCHEMA_BASE);
+    let main = tmp.write("main.rosetta", TRANSFORMS);
+    let mut client = TestClient::spawn_utf8(tmp.path());
+    client.open(&base, SCHEMA_BASE, 1);
+    client.open(&main, TRANSFORMS, 1);
+    client.sync(&main);
+
+    // From the declaration in base (line 2), declaration included.
+    let refs = references(&mut client, &base, 2, 7, true);
+    assert_eq!(
+        summary(&refs),
+        vec![
+            (base.clone(), 2, 0),  // declaration
+            (main.clone(), 3, 12), // [ingest TradingSchema]
+            (main.clone(), 8, 16), // [projection TradingSchema]
+        ],
+        "transform references count as reference sites"
+    );
+
+    // From a transform reference site in main — same answer set.
+    let refs = references(&mut client, &main, 3, 12, true);
+    assert_eq!(
+        summary(&refs),
+        vec![
+            (base.clone(), 2, 0),
+            (main.clone(), 3, 12),
+            (main.clone(), 8, 16),
+        ]
+    );
+
+    // Without the declaration.
+    let refs = references(&mut client, &base, 2, 7, false);
+    assert_eq!(
+        summary(&refs),
+        vec![(main.clone(), 3, 12), (main.clone(), 8, 16)]
+    );
+    client.shutdown();
+}
+
+#[test]
+fn references_on_format_literal_is_empty() {
+    let tmp = TempDir::new("refs-format");
+    let text = r#"namespace test
+
+func DumpTrades:
+    [projection JSON]
+    output:
+        result number (1..1)
+"#;
+    let main = tmp.write("main.rosetta", text);
+    let mut client = TestClient::spawn_utf8(tmp.path());
+    client.open(&main, text, 1);
+    client.sync(&main);
+
+    // Format literals are not named elements: references on a transform
+    // reference targeting a `SerializationFormat` literal find nothing
+    // (the enum's other references must not leak in here either).
+    let refs = references(&mut client, &main, 3, 16, true);
+    assert_eq!(summary(&refs), Vec::<(String, u32, u32)>::new());
+    client.shutdown();
+}
+
 #[test]
 fn workspace_symbol_search() {
     let tmp = TempDir::new("wssym");

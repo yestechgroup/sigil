@@ -151,6 +151,90 @@ fn definition_on_declaration_is_itself() {
     client.shutdown();
 }
 
+const SCHEMA_BASE: &str = r#"namespace test
+
+schema TradingSchema XML <"A serialization schema">
+"#;
+
+const TRANSFORMS: &str = r#"namespace test
+
+func IngestTrades: <"ingest from a schema">
+    [ingest TradingSchema]
+    output:
+        result number (1..1)
+
+func DumpTrades:
+    [projection SerializationFormat.RUNE_JSON]
+    output:
+        result number (1..1)
+
+func Broken:
+    [ingest NoSuchSchema]
+    output:
+        result number (1..1)
+"#;
+
+#[test]
+fn definition_on_transform_schema_reference() {
+    let tmp = TempDir::new("defn-transform");
+    let base = tmp.write("base.rosetta", SCHEMA_BASE);
+    let main = tmp.write("main.rosetta", TRANSFORMS);
+    let mut client = TestClient::spawn_utf8(tmp.path());
+    client.open(&base, SCHEMA_BASE, 1);
+    client.open(&main, TRANSFORMS, 1);
+    client.sync(&main);
+
+    // `TradingSchema` inside `[ingest TradingSchema]` (line 3) —
+    // cross-file definition of the schema declaration.
+    let loc = define(&mut client, &main, 3, col(TRANSFORMS, 3, "TradingSchema")).expect("location");
+    assert_eq!(loc.uri.to_string(), base);
+    assert_eq!(
+        loc.range.start,
+        Position {
+            line: 2,
+            character: 0
+        }
+    );
+
+    client.shutdown();
+}
+
+#[test]
+fn definition_on_transform_format_reference() {
+    let tmp = TempDir::new("defn-format");
+    let main = tmp.write("main.rosetta", TRANSFORMS);
+    let mut client = TestClient::spawn_utf8(tmp.path());
+    client.open(&main, TRANSFORMS, 1);
+    client.sync(&main);
+
+    // `SerializationFormat.RUNE_JSON` (line 8) — the qualified form jumps
+    // to the built-in `SerializationFormat` enum declaration.
+    let loc = define(&mut client, &main, 8, col(TRANSFORMS, 8, "RUNE_JSON")).expect("location");
+    assert_eq!(
+        loc.uri.to_string(),
+        "builtin:basictypes.rosetta",
+        "format targets point at the builtin enum declaration"
+    );
+
+    client.shutdown();
+}
+
+#[test]
+fn definition_on_unresolved_transform_reference_is_none() {
+    let tmp = TempDir::new("defn-transform-none");
+    let main = tmp.write("main.rosetta", TRANSFORMS);
+    let mut client = TestClient::spawn_utf8(tmp.path());
+    client.open(&main, TRANSFORMS, 1);
+    client.sync(&main);
+
+    // `[ingest NoSuchSchema]` (line 13) does not resolve.
+    assert_eq!(
+        define(&mut client, &main, 13, col(TRANSFORMS, 13, "NoSuchSchema")),
+        None
+    );
+    client.shutdown();
+}
+
 #[test]
 fn definition_unknown_is_none() {
     let tmp = TempDir::new("defn-none");
