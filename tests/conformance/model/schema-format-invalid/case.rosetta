@@ -1,0 +1,4 @@
+namespace test.model.format
+
+schema GoodSchema XML <"valid built-in format">
+schema BadSchema FIXML <"not a SerializationFormat value">

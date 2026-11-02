@@ -214,6 +214,7 @@ fn lower_element(element: &Element) -> Option<m::SemanticElement> {
             name: s.name.clone(),
             format: s.format.clone(),
             format_span: s.format_span,
+            format_resolved: None,
             definition: s.definition.clone(),
             annotations: lower_annotations(&s.annotations),
             span: s.span,

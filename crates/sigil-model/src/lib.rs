@@ -584,6 +584,10 @@ pub struct Schema {
     pub format: String,
     #[serde(skip_serializing)]
     pub format_span: Span,
+    /// Set during resolution: the flat element id of the in-scope
+    /// `SerializationFormat` enumeration (user-defined shadowing counts).
+    #[serde(skip_serializing)]
+    pub format_resolved: Option<usize>,
     pub definition: Option<String>,
     pub annotations: Vec<AnnotationRef>,
     /// Source span of the whole declaration (not serialized).

@@ -694,6 +694,7 @@ impl<'a> ElementResolver<'a> {
             SemanticElement::Schema(schema) => {
                 let path = format!("schema {}", schema.name);
                 self.resolve_annotations(&path, &mut schema.annotations);
+                self.resolve_schema_format(&path, schema);
             }
             SemanticElement::Body(_) => {}
             SemanticElement::Corpus(_) => {}
@@ -968,6 +969,52 @@ impl<'a> ElementResolver<'a> {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    /// `schema Name Format`: the format must be a value of the in-scope
+    /// `SerializationFormat` enumeration — the builtin, or a user-defined
+    /// enum of the same simple name shadowing it (mirroring the
+    /// transform-ref scope). The written format string is kept raw in the
+    /// model; the in-scope enum is linked via `format_resolved`.
+    fn resolve_schema_format(&mut self, path: &str, schema: &mut sigil_model::Schema) {
+        let name = schema.format.clone();
+        let span = schema.format_span;
+        match lookup(self.res, self.ctx, self.index, false, "SerializationFormat") {
+            Some(id)
+                if matches!(element_at(self.res, id), SemanticElement::Enumeration(_))
+                    && simple_name(self.res.qname(id)) == "SerializationFormat" =>
+            {
+                if enum_value_names(self.res, id).iter().any(|v| v.as_str() == name) {
+                    schema.format_resolved = Some(id.0);
+                } else {
+                    self.res.diagnostics.push(ResolutionDiagnostic::error(
+                        "E0107",
+                        &self.file.name,
+                        path,
+                        format!("'{name}' is not a value of '{}'", self.res.qname(id)),
+                        Some(span),
+                    ));
+                }
+            }
+            Some(id) => {
+                self.res.diagnostics.push(ResolutionDiagnostic::error(
+                    "E0106",
+                    &self.file.name,
+                    path,
+                    format!("'{}' is not a serialization format", self.res.qname(id)),
+                    Some(span),
+                ));
+            }
+            None => {
+                self.res.diagnostics.push(ResolutionDiagnostic::error(
+                    "E0101",
+                    &self.file.name,
+                    path,
+                    "unknown symbol 'SerializationFormat'".to_string(),
+                    Some(span),
+                ));
             }
         }
     }
