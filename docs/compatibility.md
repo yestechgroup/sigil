@@ -56,14 +56,14 @@ Milestone 1 targets levels 1–2 for the model subset below.
 | func | `func Foo:` (inputs/output/aliases/ops) | `simple.Function` | `SemanticElement::Function` | yes (function-scoped) | done (phase 4) |
 | func dispatch | `func Foo(attr: Enum->VALUE)` | `simple.FunctionDispatch` | `Function.dispatch` | dispatch refs | done (phase 4)* |
 | func extends | `func Foo extends Bar:` | `simple.Function.superFunction` | `Function.super_function` | target kind | done (phase 4)* |
-| transform annotation | `[ingest X]` / `[enrich]` / `[projection Y]` | `simple.TransformAnnotation` | `Function.transform` | ref kept as written | done (phase 4)* |
+| transform annotation | `[ingest X]` / `[enrich]` / `[projection Y]` | `simple.TransformAnnotation` | `Function.transform` | SchemaOrFormat scope | done (phase 4)* |
 | alias | `alias name: expr` | `simple.ShortcutDeclaration` | `Function.shortcuts` | expression heads | done (phase 4) |
 | operation | `set\|add root (-> seg)*: expr as-key?` | `simple.Operation` + `simple.Segment` | `Function.operations` | root + path chain | done (phase 4) |
 | post-condition | `post-condition Foo: <expr>` | `simple.Condition (postCondition)` | `Function.post_conditions` | expression heads | done (phase 4) |
 | rule / reporting rule | `reporting rule Foo from T:` | `RosettaRule` | `SemanticElement::Rule` | input + expression heads | done (phase 4) |
 | report | `report Body Corpus in T+1 ...` | `RosettaReport` | `SemanticElement::Report` | regulatory refs, rules, types | done (phase 4)* |
 | rule source | `rule source Foo extends Bar { }` | `RosettaExternalRuleSource` | `SemanticElement::ExternalRuleSource` | class data, attributes, rule refs | done (phase 4) |
-| schema | `schema Foo JSON` | `Schema` | `SemanticElement::Schema` | annotations | done (phase 4)* |
+| schema | `schema Foo JSON` | `Schema` | `SemanticElement::Schema` | annotations + format | done (phase 4)* |
 | body / corpus / segment | `body T Foo`, `corpus ...`, `segment Foo` | `RosettaBody` / `RosettaCorpus` / `RosettaSegment` | respective elements | n/a | done (phase 4) |
 | metaType | `metaType Foo number` | `RosettaMetaType` | `SemanticElement::MetaType` | type | done (phase 4) |
 | expressions | literals, paths, operators, `filter`/`extract`/... | `RosettaExpression` hierarchy | `sigil_model::expr::Expr` (+ normalized JSON and printer) | symbol heads (phase 4) | done (parse, IR, differential) |
@@ -128,13 +128,52 @@ Duplicate definitions *within* a kind are reported (`E0104`).
 | --- | --- |
 | `E0001` | syntax error (parse) |
 | `W0001` | reserved — unused since phase 4 (unsupported-construct skip, kept for future grammar additions) |
-| `E0101` | unknown type / super type / unknown expression symbol head |
-| `E0102` | unknown annotation |
+| `E0101` | unknown type / super type / schema-or-serialization-format / unknown expression symbol head |
+| `E0102` | unknown annotation; `externalConfig` applied to a non-schema element |
 | `E0103` | annotation has no such attribute |
 | `E0104` | duplicate definition within a kind |
 | `E0105` | inheritance cycle |
-| `E0106` | reference target of the wrong kind |
-| `E0107` | unknown attribute (operation path, dispatch attribute, rule-source attribute) or enum value |
+| `E0106` | reference target of the wrong kind (incl. transform ref that is not a schema/serialization format) |
+| `E0107` | unknown attribute (operation path, dispatch attribute, rule-source attribute) or enum value (incl. unknown `SerializationFormat` literal) |
+| `W0101` | reference to a `[deprecated]` element (warning severity; never fails resolution) |
+
+## Schema and transform-annotation resolution
+
+`schema Foo Format` and `[ingest X]`/`[enrich]`/`[projection X]` have no
+9.58.1 counterpart; the semantics below follow main-branch Rune and are
+covered by sigil-only conformance fixtures
+(`functions/func-transform-*`, `model/schema-format-invalid`,
+`model/deprecated-schema-ref`, `model/external-config-misapplied`).
+
+* **Transform refs** resolve against the grammar's `SchemaOrFormat` scope:
+  a `schema` element, or a value of the `SerializationFormat` enumeration
+  written bare (`[projection JSON]`) or qualified
+  (`[projection SerializationFormat.JSON]`). Both spellings render
+  identically in canonical JSON (`<enum FQN>.<VALUE>`); schema refs render
+  the schema's FQN. Unresolved refs fall back to the written name.
+* **Schema formats** must be a `SerializationFormat` literal. Both lookups
+  respect shadowing: a user-defined enum named `SerializationFormat`
+  replaces the builtin for its file (a conformance fixture pins this).
+* **Deprecation warnings** (`W0101`) fire at every resolved reference to a
+  `[deprecated]` element (types, enums, type aliases, functions, schemas).
+  They are computed in a post-resolution pass (link first, validate
+  after), so they do not depend on element processing order, and are
+  appended after all errors.
+* **Applicability**: the builtin `externalConfig` annotation is enforced
+  as schema-only (`E0102` elsewhere) — hardcoded like the Java validator,
+  since `annotation` declarations carry no applicability metadata.
+
+Deliberately unsupported (would require information outside the model or
+validation sigil does not model yet):
+
+* the `[externalConfig]` marker ↔ external-configuration-file sync checks
+  (error when a marked schema has no configured config; warning when a
+  config exists for an unmarked schema) — serialization configs live
+  outside the model, which sigil never reads;
+* the CSV "tabular types only" check (all attributes single-cardinality
+  basic types);
+* deprecation of individual enum *values* referenced inside expressions
+  (enum literals are not indexed elements).
 
 ## Oracle harness
 
