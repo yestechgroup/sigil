@@ -1,0 +1,15 @@
+namespace test.model.deprecated
+
+schema OldSchema XML <"superseded format">
+	[deprecated]
+
+type Trade:
+	price number (1..1)
+
+func Ingest:
+	[ingest OldSchema]
+	output:
+		result number (1..1)
+
+	set result:
+		0.0
