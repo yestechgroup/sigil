@@ -1,0 +1,21 @@
+namespace test.functions.qualified
+
+schema CsvSchema CSV <"tabular schema">
+
+func ProjectQualified:
+	[projection SerializationFormat.RUNE_JSON]
+	output:
+		result number (1..1)
+
+	set result:
+		0.0
+
+func IngestQualified:
+	[ingest test.functions.qualified.CsvSchema]
+	inputs:
+		x number (1..1)
+	output:
+		result number (1..1)
+
+	set result:
+		x

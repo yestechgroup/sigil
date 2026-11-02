@@ -402,6 +402,7 @@ impl<'a> ElementResolver<'a> {
                     );
                 }
                 self.resolve_annotations(&path, &mut function.annotations);
+                self.resolve_transform_refs(&path, &mut function.transform);
                 self.resolve_attributes(&path, &mut function.inputs);
                 if let Some(output) = &mut function.output {
                     let o_path = format!("{path}.output");
@@ -822,6 +823,150 @@ impl<'a> ElementResolver<'a> {
                         format!("unknown annotation '{}'", annotation.annotation),
                         Some(annotation.span),
                     ));
+                }
+            }
+        }
+    }
+
+    /// Resolve transform-annotation references (`[ingest X]` /
+    /// `[projection X]`): the grammar's `SchemaOrFormat` scope — a `Schema`
+    /// element or a value of the `SerializationFormat` enumeration (bare
+    /// literal or `SerializationFormat.VALUE`).
+    fn resolve_transform_refs(
+        &mut self,
+        path: &str,
+        transforms: &mut [sigil_model::TransformAnnotation],
+    ) {
+        for (idx, transform) in transforms.iter_mut().enumerate() {
+            let Some(name) = transform.reference.clone() else {
+                continue;
+            };
+            let t_path = format!("{path}.transform[{idx}]");
+            match lookup(self.res, self.ctx, self.index, false, &name) {
+                Some(id) => {
+                    if matches!(element_at(self.res, id), SemanticElement::Schema(_)) {
+                        transform.reference_resolved =
+                            Some(sigil_model::TransformRefTarget::Schema(id.0));
+                    } else {
+                        self.res.diagnostics.push(ResolutionDiagnostic::error(
+                            "E0106",
+                            &self.file.name,
+                            &t_path,
+                            format!(
+                                "'{}' is not a schema or serialization format",
+                                self.res.qname(id)
+                            ),
+                            Some(transform.reference_span),
+                        ));
+                    }
+                }
+                None => {
+                    // Not a named element: a `SerializationFormat` literal,
+                    // written bare (`JSON`) or qualified
+                    // (`SerializationFormat.JSON`).
+                    if name.contains('.') {
+                        let (head, value) = name.split_once('.').expect("checked dot above");
+                        match lookup(self.res, self.ctx, self.index, false, head) {
+                            Some(id)
+                                if matches!(
+                                    element_at(self.res, id),
+                                    SemanticElement::Enumeration(_)
+                                ) && simple_name(self.res.qname(id))
+                                    == "SerializationFormat" =>
+                            {
+                                if enum_value_names(self.res, id)
+                                    .iter()
+                                    .any(|v| v.as_str() == value)
+                                {
+                                    transform.reference_resolved =
+                                        Some(sigil_model::TransformRefTarget::Format(
+                                            id.0,
+                                            value.to_string(),
+                                        ));
+                                } else {
+                                    self.res.diagnostics.push(ResolutionDiagnostic::error(
+                                        "E0107",
+                                        &self.file.name,
+                                        &t_path,
+                                        format!(
+                                            "'{value}' is not a value of '{}'",
+                                            self.res.qname(id)
+                                        ),
+                                        Some(transform.reference_span),
+                                    ));
+                                }
+                            }
+                            Some(id) => {
+                                self.res.diagnostics.push(ResolutionDiagnostic::error(
+                                    "E0106",
+                                    &self.file.name,
+                                    &t_path,
+                                    format!(
+                                        "'{}' is not a serialization format",
+                                        self.res.qname(id)
+                                    ),
+                                    Some(transform.reference_span),
+                                ));
+                            }
+                            None => {
+                                self.res.diagnostics.push(ResolutionDiagnostic::error(
+                                    "E0101",
+                                    &self.file.name,
+                                    &t_path,
+                                    format!("unknown schema or serialization format '{name}'"),
+                                    Some(transform.reference_span),
+                                ));
+                            }
+                        }
+                    } else {
+                        match lookup(self.res, self.ctx, self.index, false, "SerializationFormat") {
+                            Some(id)
+                                if matches!(
+                                    element_at(self.res, id),
+                                    SemanticElement::Enumeration(_)
+                                ) && simple_name(self.res.qname(id))
+                                    == "SerializationFormat" =>
+                            {
+                                if enum_value_names(self.res, id)
+                                    .iter()
+                                    .any(|v| v.as_str() == name)
+                                {
+                                    transform.reference_resolved = Some(
+                                        sigil_model::TransformRefTarget::Format(id.0, name.clone()),
+                                    );
+                                } else {
+                                    self.res.diagnostics.push(ResolutionDiagnostic::error(
+                                        "E0101",
+                                        &self.file.name,
+                                        &t_path,
+                                        format!("unknown schema or serialization format '{name}'"),
+                                        Some(transform.reference_span),
+                                    ));
+                                }
+                            }
+                            Some(id) => {
+                                self.res.diagnostics.push(ResolutionDiagnostic::error(
+                                    "E0106",
+                                    &self.file.name,
+                                    &t_path,
+                                    format!(
+                                        "'{}' is not a serialization format",
+                                        self.res.qname(id)
+                                    ),
+                                    Some(transform.reference_span),
+                                ));
+                            }
+                            None => {
+                                self.res.diagnostics.push(ResolutionDiagnostic::error(
+                                    "E0101",
+                                    &self.file.name,
+                                    &t_path,
+                                    format!("unknown schema or serialization format '{name}'"),
+                                    Some(transform.reference_span),
+                                ));
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1550,7 +1695,7 @@ fn element_json(element: &SemanticElement, res: &Resolution) -> serde_json::Valu
             "transform": serde_json::Value::Array(
                 f.transform.iter().map(|t| json!({
                     "kind": t.kind.as_str(),
-                    "ref": t.reference.as_ref().map(|r| json!({ "name": r })),
+                    "ref": transform_ref_json(t, res),
                 })).collect(),
             ),
             "dispatch": f.dispatch.as_ref().map(|d| json!({
@@ -1660,6 +1805,27 @@ fn named_ref_json(reference: &sigil_model::NamedRef, res: &Resolution) -> serde_
         Some(id) => json!(res.element_names[id]),
         None => json!(reference.name),
     }
+}
+
+/// A transform annotation's reference renders as the resolved target's
+/// qualified name — the schema element's FQN, or the SerializationFormat
+/// literal as `<enum FQN>.<VALUE>` — falling back to the written name when
+/// unresolved.
+fn transform_ref_json(
+    transform: &sigil_model::TransformAnnotation,
+    res: &Resolution,
+) -> serde_json::Value {
+    let name = match &transform.reference_resolved {
+        Some(sigil_model::TransformRefTarget::Schema(id)) => res.element_names[*id].clone(),
+        Some(sigil_model::TransformRefTarget::Format(enum_id, value)) => {
+            format!("{}.{}", res.qname(ElementId(*enum_id)), value)
+        }
+        None => match &transform.reference {
+            Some(written) => written.clone(),
+            None => return serde_json::Value::Null,
+        },
+    };
+    json!({ "name": name })
 }
 
 /// Canonical JSON rendering of a resolved model: the compatibility artifact
