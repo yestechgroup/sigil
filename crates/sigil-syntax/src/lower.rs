@@ -108,6 +108,7 @@ fn lower_element(element: &Element) -> Option<m::SemanticElement> {
                     },
                     reference: t.reference.as_ref().map(|r| r.name.0.clone()),
                     reference_span: t.reference.as_ref().map(|r| r.span).unwrap_or_default(),
+                    reference_resolved: None,
                 })
                 .collect(),
             dispatch: f.dispatch.as_ref().map(|d| m::FunctionDispatch {
@@ -213,6 +214,7 @@ fn lower_element(element: &Element) -> Option<m::SemanticElement> {
             name: s.name.clone(),
             format: s.format.clone(),
             format_span: s.format_span,
+            format_resolved: None,
             definition: s.definition.clone(),
             annotations: lower_annotations(&s.annotations),
             span: s.span,

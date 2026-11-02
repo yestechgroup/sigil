@@ -378,6 +378,21 @@ pub struct TransformAnnotation {
     pub reference: Option<String>,
     #[serde(skip_serializing)]
     pub reference_span: Span,
+    /// Set during resolution: what the reference points at (a `Schema`
+    /// element or a `SerializationFormat` literal). Not serialized —
+    /// `canonical_json` renders the resolved target's qualified name.
+    #[serde(skip_serializing)]
+    pub reference_resolved: Option<TransformRefTarget>,
+}
+
+/// What a resolved transform-annotation reference points at.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TransformRefTarget {
+    /// A referenced `schema` element (flat element id).
+    Schema(usize),
+    /// A value of the built-in `SerializationFormat` enum: the enum's flat
+    /// element id plus the literal name.
+    Format(usize, String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -569,6 +584,10 @@ pub struct Schema {
     pub format: String,
     #[serde(skip_serializing)]
     pub format_span: Span,
+    /// Set during resolution: the flat element id of the in-scope
+    /// `SerializationFormat` enumeration (user-defined shadowing counts).
+    #[serde(skip_serializing)]
+    pub format_resolved: Option<usize>,
     pub definition: Option<String>,
     pub annotations: Vec<AnnotationRef>,
     /// Source span of the whole declaration (not serialized).

@@ -8,7 +8,9 @@
 use std::collections::HashMap;
 
 use sigil_diag::Span;
-use sigil_model::{Attribute, EnumValue, SemanticElement, TypeRef};
+use sigil_model::{
+    Attribute, EnumValue, SemanticElement, TransformAnnotation, TransformRefTarget, TypeRef,
+};
 use sigil_syntax::ast::{Element, SourceUnit};
 
 use crate::document::Document;
@@ -106,6 +108,7 @@ enum Node<'a> {
     EnumValue(&'a EnumValue, usize),
     TypeRef(&'a TypeRef),
     AnnotationRef(&'a sigil_model::AnnotationRef),
+    TransformRef(&'a TransformAnnotation),
 }
 
 /// A candidate hit: a span that may contain the cursor. `priority == 0`
@@ -152,6 +155,23 @@ fn candidates<'a>(world: &'a World, uri: &str) -> Vec<Candidate<'a>> {
                 priority: 1,
                 span: trim_span_end(&text, a.span),
                 node: Node::AnnotationRef(a),
+            });
+        }
+    };
+    // `[ingest X]` / `[projection X]`: the written reference name. `[enrich]`
+    // has no reference and yields nothing.
+    let push_transforms = |transforms: &'a [TransformAnnotation], out: &mut Vec<Candidate<'a>>| {
+        for t in transforms {
+            let Some(name) = &t.reference else { continue };
+            out.push(Candidate {
+                priority: 0,
+                span: find_name_region(&text, t.reference_span, name),
+                node: Node::TransformRef(t),
+            });
+            out.push(Candidate {
+                priority: 1,
+                span: trim_span_end(&text, t.reference_span),
+                node: Node::TransformRef(t),
             });
         }
     };
@@ -257,6 +277,7 @@ fn candidates<'a>(world: &'a World, uri: &str) -> Vec<Candidate<'a>> {
                             node: Node::Element(this),
                         });
                         push_annotations(&f.annotations, &mut out);
+                        push_transforms(&f.transform, &mut out);
                         if let Some(s) = &f.super_function {
                             push_type_ref(s, &mut out);
                         }
@@ -390,6 +411,7 @@ enum Selected {
     EnumValue { owner: usize, name: String },
     TypeRef { resolved: Option<usize> },
     AnnotationRef { resolved: Option<usize> },
+    TransformRef { target: Option<TransformRefTarget> },
 }
 
 fn select_at(world: &World, uri: &str, offset: usize) -> Option<(Span, Selected)> {
@@ -421,6 +443,9 @@ fn select_at(world: &World, uri: &str, offset: usize) -> Option<(Span, Selected)
         },
         Node::AnnotationRef(a) => Selected::AnnotationRef {
             resolved: a.annotation_resolved,
+        },
+        Node::TransformRef(t) => Selected::TransformRef {
+            target: t.reference_resolved.clone(),
         },
     };
     Some((best.span, selected))
@@ -526,6 +551,16 @@ fn element_markdown(world: &World, flat: usize) -> Option<String> {
         md.push_str(def.trim());
     }
     Some(md)
+}
+
+/// The flat id a transform reference navigates to: the referenced `schema`
+/// element, or — for a `SerializationFormat` literal, which is not a named
+/// element — its enumeration's declaration.
+fn transform_target_element(target: &TransformRefTarget) -> usize {
+    match target {
+        TransformRefTarget::Schema(id) => *id,
+        TransformRefTarget::Format(id, _) => *id,
+    }
 }
 
 // ---- documentSymbol --------------------------------------------------------
@@ -783,8 +818,10 @@ fn attribute_symbol(
 /// `textDocument/definition`: on a type reference (attribute type, extends,
 /// type alias, record feature, configuration root, ...) return the
 /// declaring element's range; on an annotation reference the declaring
-/// annotation; on a declaration name the declaration itself. Works
-/// cross-file and into the built-in library.
+/// annotation; on a transform reference (`[ingest X]`, `[projection X]`)
+/// the declaring schema — or the `SerializationFormat` enum for a format
+/// literal; on a declaration name the declaration itself. Works cross-file
+/// and into the built-in library.
 pub fn definition(
     world: &World,
     uri: &str,
@@ -796,6 +833,9 @@ pub fn definition(
     match selected {
         Selected::TypeRef { resolved, .. } => element_location(world, resolved?),
         Selected::AnnotationRef { resolved, .. } => element_location(world, resolved?),
+        Selected::TransformRef { target } => {
+            element_location(world, transform_target_element(&target?))
+        }
         Selected::Element(flat) => element_location(world, flat),
         Selected::Attribute { .. } | Selected::EnumValue { .. } => {
             // Definition on a declaration itself: its own name region.
@@ -820,8 +860,8 @@ fn span_of_selected(world: &World, uri: &str, offset: usize) -> Span {
 
 /// `textDocument/hover`: hovered element/attribute/enum value renders its
 /// `<"...">` definition (and, for attributes, the resolved type FQN and
-/// cardinality); a hovered reference renders the target's FQN and
-/// definition. Markdown-formatted.
+/// cardinality); a hovered reference (type, annotation, transform) renders
+/// the target's FQN and definition. Markdown-formatted.
 pub fn hover(world: &World, uri: &str, position: lsp_types::Position) -> Option<lsp_types::Hover> {
     let doc = world.document(uri)?;
     let offset = doc.offset(position, world.encoding());
@@ -831,6 +871,9 @@ pub fn hover(world: &World, uri: &str, position: lsp_types::Position) -> Option<
     let markdown = match selected {
         Selected::TypeRef { resolved, .. } => element_markdown(world, resolved?),
         Selected::AnnotationRef { resolved, .. } => element_markdown(world, resolved?),
+        Selected::TransformRef { target } => {
+            element_markdown(world, transform_target_element(&target?))
+        }
         Selected::Element(flat) => element_markdown(world, flat),
         Selected::Attribute { owner, name } => {
             let owner_fqn = &resolution.element_names[owner];
@@ -891,7 +934,10 @@ pub fn hover(world: &World, uri: &str, position: lsp_types::Position) -> Option<
 
 /// All reference sites in the workspace: (file name, name-region span,
 /// resolved flat id). Includes builtin files so references inside
-/// `com.rosetta.model` count too.
+/// `com.rosetta.model` count too. Transform references participate with
+/// their `Schema` targets only — a `SerializationFormat` literal is not a
+/// named element, so it has no reference sites (and rename never touches
+/// the written literals).
 fn reference_sites(world: &World) -> Vec<(String, Span, usize)> {
     let resolution = &world.analysis().resolution;
     let mut sites = Vec::new();
@@ -1074,6 +1120,17 @@ fn reference_sites(world: &World) -> Vec<(String, Span, usize)> {
                                 ));
                             }
                         }
+                        for t in &f.transform {
+                            if let (Some(name), Some(TransformRefTarget::Schema(id))) =
+                                (&t.reference, &t.reference_resolved)
+                            {
+                                sites.push((
+                                    file.name.clone(),
+                                    find_name_region(&text, t.reference_span, name),
+                                    *id,
+                                ));
+                            }
+                        }
                     }
                     SemanticElement::Rule(r) => {
                         if let Some(i) = &r.input {
@@ -1215,6 +1272,11 @@ pub fn references(
         Some((_, Selected::Element(flat))) => Some(flat),
         Some((_, Selected::TypeRef { resolved, .. })) => resolved,
         Some((_, Selected::AnnotationRef { resolved, .. })) => resolved,
+        Some((_, Selected::TransformRef { target })) => match target {
+            Some(TransformRefTarget::Schema(id)) => Some(id),
+            // Format literals are not named elements: no reference index.
+            Some(TransformRefTarget::Format(..)) | None => None,
+        },
         _ => None,
     };
     let target = match target {
@@ -1412,10 +1474,11 @@ fn element_file_and_span(world: &World, flat: usize) -> Option<(String, Span)> {
 
 /// `textDocument/rename`: rename the element under the cursor across the
 /// whole workspace. The site index is the same one `references` uses
-/// (every type/annotation reference resolving to the target), plus the
-/// declaration's name region. Edits never touch `builtin:` files (the
-/// built-in library is read-only), and a rename whose *declaration* lives
-/// there is rejected outright.
+/// (every type/annotation/transform reference resolving to the target),
+/// plus the declaration's name region. Edits never touch `builtin:` files
+/// (the built-in library is read-only), a rename whose *declaration* lives
+/// there is rejected outright, and a `SerializationFormat` literal is not
+/// a named element (it cannot be renamed and never appears as a site).
 pub fn rename(
     world: &World,
     uri: &str,
@@ -1431,6 +1494,16 @@ pub fn rename(
         Some((_, Selected::Element(flat))) => Some(flat),
         Some((_, Selected::TypeRef { resolved })) => resolved,
         Some((_, Selected::AnnotationRef { resolved })) => resolved,
+        Some((_, Selected::TransformRef { target })) => match target {
+            Some(TransformRefTarget::Schema(id)) => Some(id),
+            Some(TransformRefTarget::Format(..)) => {
+                return Err(
+                    "serialization format references cannot be renamed: enum literals are not named elements"
+                        .to_string(),
+                );
+            }
+            None => None,
+        },
         Some((_, Selected::Attribute { .. })) => {
             return Err(
                 "attributes cannot be renamed: their references are not tracked yet".to_string(),

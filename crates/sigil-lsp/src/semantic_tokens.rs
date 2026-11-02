@@ -23,8 +23,8 @@
 //! | Rune construct                          | token type    |
 //! | --------------------------------------- | ------------- |
 //! | namespace / imported namespace          | `namespace`   |
-//! | type, choice, typeAlias, basicType, recordType, schema, metaType, segment, rule source, unresolved type ref | `type` |
-//! | enum declaration; a reference resolving to an enum | `enum` |
+//! | type, choice, typeAlias, basicType, recordType, schema, metaType, segment, rule source, unresolved type ref, `[ingest X]`/`[projection X]` schema ref | `type` |
+//! | enum declaration; a reference resolving to an enum (incl. a `SerializationFormat` transform ref) | `enum` |
 //! | enum value                              | `enumMember`  |
 //! | annotation declaration and `[...]` references | `decorator` |
 //! | func, rule, library function            | `function`    |
@@ -52,7 +52,9 @@ use lsp_types::{
     SemanticTokensServerCapabilities, WorkDoneProgressOptions,
 };
 use sigil_diag::Span;
-use sigil_model::{AnnotationRef, Attribute, ModelFile, SemanticElement, TypeRef};
+use sigil_model::{
+    AnnotationRef, Attribute, ModelFile, SemanticElement, TransformRefTarget, TypeRef,
+};
 use sigil_resolve::{ElementId, ElementKind, Resolution};
 
 use crate::features;
@@ -362,6 +364,20 @@ fn collect_file(resolution: &Resolution, file: &ModelFile, text: &str, out: &mut
                 }
                 for anno in &f.annotations {
                     push_annotation_ref(anno, text, out);
+                }
+                for t in &f.transform {
+                    if let Some(name) = &t.reference {
+                        // Classify through the resolved target: a schema
+                        // ref highlights as `type`, a `SerializationFormat`
+                        // literal as `enum`; unresolved stays `type`.
+                        let resolved = match &t.reference_resolved {
+                            Some(
+                                TransformRefTarget::Schema(id) | TransformRefTarget::Format(id, _),
+                            ) => Some(*id),
+                            None => None,
+                        };
+                        push_named_ref(resolution, resolved, t.reference_span, name, text, out);
+                    }
                 }
                 for a in f.inputs.iter().chain(f.output.iter()) {
                     push_attribute(a, resolution, text, out);

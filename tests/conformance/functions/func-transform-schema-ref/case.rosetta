@@ -1,0 +1,24 @@
+namespace test.functions.transform
+
+type Trade:
+	price number (1..1)
+
+schema FixmlSchema XML <"a named serialization schema">
+
+func IngestTrades: <"ingest from a named schema">
+	[ingest FixmlSchema]
+	inputs:
+		trade Trade (1..1)
+	output:
+		result number (1..1)
+
+	set result:
+		trade -> price
+
+func ProjectTradesJson:
+	[projection JSON]
+	output:
+		result number (1..1)
+
+	set result:
+		0.0

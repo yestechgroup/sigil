@@ -1,0 +1,44 @@
+namespace test.functions.errors
+
+type SomeType:
+	x number (1..1)
+
+func UnknownRef:
+	[ingest NoSuchSchema]
+	output:
+		result number (1..1)
+
+	set result:
+		0.0
+
+func WrongKindRef:
+	[ingest SomeType]
+	output:
+		result number (1..1)
+
+	set result:
+		0.0
+
+func UnknownFormatRef:
+	[projection FIXML]
+	output:
+		result number (1..1)
+
+	set result:
+		0.0
+
+func UnknownQualifiedValue:
+	[projection SerializationFormat.NONSENSE]
+	output:
+		result number (1..1)
+
+	set result:
+		0.0
+
+func QualifiedHeadNotEnum:
+	[projection SomeType.X]
+	output:
+		result number (1..1)
+
+	set result:
+		0.0

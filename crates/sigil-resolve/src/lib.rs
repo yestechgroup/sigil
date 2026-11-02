@@ -58,6 +58,23 @@ impl ResolutionDiagnostic {
             span,
         }
     }
+
+    fn warning(
+        code: &'static str,
+        file: &str,
+        path: &str,
+        message: String,
+        span: Option<Span>,
+    ) -> Self {
+        ResolutionDiagnostic {
+            severity: Severity::Warning,
+            code,
+            message,
+            file: file.to_string(),
+            path: path.to_string(),
+            span,
+        }
+    }
 }
 
 /// A global element identity: flat index across all files' elements.
@@ -285,6 +302,13 @@ pub fn resolve(user_files: Vec<ModelFile>) -> Resolution {
     // ---- inheritance cycle detection ------------------------------------
     detect_cycles(&mut res);
 
+    // ---- deprecation warnings -------------------------------------------
+    // Fired after every reference is resolved (link first, validate after —
+    // like the oracle's validator): element processing order must not
+    // influence whether a warning fires, and the per-file resolution clone
+    // (see above) would hide same-file annotations from in-flight lookups.
+    emit_deprecation_warnings(&mut res);
+
     res
 }
 
@@ -313,8 +337,8 @@ impl<'a> ElementResolver<'a> {
                         "data type",
                     );
                 }
-                self.resolve_attributes(&path, &mut data.attributes);
-                self.resolve_annotations(&path, &mut data.annotations);
+                self.resolve_attributes(&path, &mut data.attributes, ElementKind::Data);
+                self.resolve_annotations(&path, &mut data.annotations, ElementKind::Data);
                 // Condition expressions see the attributes of the enclosing
                 // type, including inherited ones (the implicit-variable
                 // features), then fall back to the file scope.
@@ -332,7 +356,11 @@ impl<'a> ElementResolver<'a> {
                         "{path}.conditions[{}]",
                         condition.name.as_deref().unwrap_or("")
                     );
-                    self.resolve_annotations(&c_path, &mut condition.annotations);
+                    self.resolve_annotations(
+                        &c_path,
+                        &mut condition.annotations,
+                        ElementKind::Data,
+                    );
                     self.resolve_expr_heads(
                         &c_path,
                         &mut condition.expression,
@@ -350,11 +378,11 @@ impl<'a> ElementResolver<'a> {
                         "enumeration",
                     );
                 }
-                self.resolve_annotations(&path, &mut enumm.annotations);
+                self.resolve_annotations(&path, &mut enumm.annotations, ElementKind::Enumeration);
             }
             SemanticElement::Annotation(anno) => {
                 let path = format!("annotation {}", anno.name);
-                self.resolve_attributes(&path, &mut anno.attributes);
+                self.resolve_attributes(&path, &mut anno.attributes, ElementKind::Annotation);
             }
             SemanticElement::TypeAlias(alias) => {
                 let path = format!("typeAlias {}", alias.name);
@@ -365,7 +393,7 @@ impl<'a> ElementResolver<'a> {
                 let mut t = std::mem::take(&mut alias.type_ref);
                 self.resolve_type_ref(&path, &mut t, AnyType);
                 alias.type_ref = t;
-                self.resolve_annotations(&path, &mut alias.annotations);
+                self.resolve_annotations(&path, &mut alias.annotations, ElementKind::TypeAlias);
             }
             SemanticElement::BasicType(basic) => {
                 let path = format!("basicType {}", basic.name);
@@ -401,14 +429,19 @@ impl<'a> ElementResolver<'a> {
                         "function",
                     );
                 }
-                self.resolve_annotations(&path, &mut function.annotations);
-                self.resolve_attributes(&path, &mut function.inputs);
+                self.resolve_annotations(&path, &mut function.annotations, ElementKind::Function);
+                self.resolve_transform_refs(&path, &mut function.transform);
+                self.resolve_attributes(&path, &mut function.inputs, ElementKind::Function);
                 if let Some(output) = &mut function.output {
                     let o_path = format!("{path}.output");
                     let mut t = std::mem::take(&mut output.type_ref);
                     self.resolve_type_ref(&o_path, &mut t, AnyType);
                     output.type_ref = t;
-                    self.resolve_annotations(&o_path, &mut output.annotations);
+                    self.resolve_annotations(
+                        &o_path,
+                        &mut output.annotations,
+                        ElementKind::Function,
+                    );
                 }
 
                 let inputs: Vec<String> = function.inputs.iter().map(|a| a.name.clone()).collect();
@@ -487,7 +520,11 @@ impl<'a> ElementResolver<'a> {
                         "{path}.conditions[{}]",
                         condition.name.as_deref().unwrap_or("")
                     );
-                    self.resolve_annotations(&c_path, &mut condition.annotations);
+                    self.resolve_annotations(
+                        &c_path,
+                        &mut condition.annotations,
+                        ElementKind::Function,
+                    );
                     // Non-post conditions must not see the output.
                     let mut frame = inputs.clone();
                     frame.extend(shortcuts.clone());
@@ -556,7 +593,11 @@ impl<'a> ElementResolver<'a> {
                         "{path}.postConditions[{}]",
                         condition.name.as_deref().unwrap_or("")
                     );
-                    self.resolve_annotations(&c_path, &mut condition.annotations);
+                    self.resolve_annotations(
+                        &c_path,
+                        &mut condition.annotations,
+                        ElementKind::Function,
+                    );
                     // Post-conditions see everything.
                     let mut frame = inputs.clone();
                     if let Some(out) = &output_name {
@@ -692,7 +733,8 @@ impl<'a> ElementResolver<'a> {
             }
             SemanticElement::Schema(schema) => {
                 let path = format!("schema {}", schema.name);
-                self.resolve_annotations(&path, &mut schema.annotations);
+                self.resolve_annotations(&path, &mut schema.annotations, ElementKind::Schema);
+                self.resolve_schema_format(&path, schema);
             }
             SemanticElement::Body(_) => {}
             SemanticElement::Corpus(_) => {}
@@ -706,13 +748,18 @@ impl<'a> ElementResolver<'a> {
         }
     }
 
-    fn resolve_attributes(&mut self, path: &str, attributes: &mut [sigil_model::Attribute]) {
+    fn resolve_attributes(
+        &mut self,
+        path: &str,
+        attributes: &mut [sigil_model::Attribute],
+        owner: ElementKind,
+    ) {
         for (idx, attribute) in attributes.iter_mut().enumerate() {
             let attr_path = format!("{path}.attributes[{idx}]");
             let mut t = std::mem::take(&mut attribute.type_ref);
             self.resolve_type_ref(&attr_path, &mut t, AnyType);
             attribute.type_ref = t;
-            self.resolve_annotations(&attr_path, &mut attribute.annotations);
+            self.resolve_annotations(&attr_path, &mut attribute.annotations, owner);
         }
     }
 
@@ -782,7 +829,12 @@ impl<'a> ElementResolver<'a> {
         }
     }
 
-    fn resolve_annotations(&mut self, path: &str, annotations: &mut [sigil_model::AnnotationRef]) {
+    fn resolve_annotations(
+        &mut self,
+        path: &str,
+        annotations: &mut [sigil_model::AnnotationRef],
+        owner: ElementKind,
+    ) {
         for annotation in annotations.iter_mut() {
             match lookup(self.res, self.ctx, self.index, true, &annotation.annotation) {
                 Some(id) => {
@@ -804,6 +856,23 @@ impl<'a> ElementResolver<'a> {
                             }
                         }
                         annotation.annotation_resolved = Some(id.0);
+                        // Applicability: the builtin `externalConfig`
+                        // annotation may only annotate a schema (validator
+                        // rule hardcoded in the Java implementation —
+                        // annotation declarations carry no applicability
+                        // metadata in the grammar).
+                        if self.res.qname(id) == EXTERNAL_CONFIG_ANNOTATION
+                            && owner != ElementKind::Schema
+                        {
+                            self.res.diagnostics.push(ResolutionDiagnostic::error(
+                                "E0102",
+                                &self.file.name,
+                                path,
+                                "annotation 'externalConfig' may only be applied to a schema"
+                                    .to_string(),
+                                Some(annotation.span),
+                            ));
+                        }
                     } else {
                         self.res.diagnostics.push(ResolutionDiagnostic::error(
                             "E0102",
@@ -823,6 +892,199 @@ impl<'a> ElementResolver<'a> {
                         Some(annotation.span),
                     ));
                 }
+            }
+        }
+    }
+
+    /// Resolve transform-annotation references (`[ingest X]` /
+    /// `[projection X]`): the grammar's `SchemaOrFormat` scope — a `Schema`
+    /// element or a value of the `SerializationFormat` enumeration (bare
+    /// literal or `SerializationFormat.VALUE`).
+    fn resolve_transform_refs(
+        &mut self,
+        path: &str,
+        transforms: &mut [sigil_model::TransformAnnotation],
+    ) {
+        for (idx, transform) in transforms.iter_mut().enumerate() {
+            let Some(name) = transform.reference.clone() else {
+                continue;
+            };
+            let t_path = format!("{path}.transform[{idx}]");
+            match lookup(self.res, self.ctx, self.index, false, &name) {
+                Some(id) => {
+                    if matches!(element_at(self.res, id), SemanticElement::Schema(_)) {
+                        transform.reference_resolved =
+                            Some(sigil_model::TransformRefTarget::Schema(id.0));
+                    } else {
+                        self.res.diagnostics.push(ResolutionDiagnostic::error(
+                            "E0106",
+                            &self.file.name,
+                            &t_path,
+                            format!(
+                                "'{}' is not a schema or serialization format",
+                                self.res.qname(id)
+                            ),
+                            Some(transform.reference_span),
+                        ));
+                    }
+                }
+                None => {
+                    // Not a named element: a `SerializationFormat` literal,
+                    // written bare (`JSON`) or qualified
+                    // (`SerializationFormat.JSON`).
+                    if name.contains('.') {
+                        let (head, value) = name.split_once('.').expect("checked dot above");
+                        match lookup(self.res, self.ctx, self.index, false, head) {
+                            Some(id)
+                                if matches!(
+                                    element_at(self.res, id),
+                                    SemanticElement::Enumeration(_)
+                                ) && simple_name(self.res.qname(id))
+                                    == "SerializationFormat" =>
+                            {
+                                if enum_value_names(self.res, id)
+                                    .iter()
+                                    .any(|v| v.as_str() == value)
+                                {
+                                    transform.reference_resolved =
+                                        Some(sigil_model::TransformRefTarget::Format(
+                                            id.0,
+                                            value.to_string(),
+                                        ));
+                                } else {
+                                    self.res.diagnostics.push(ResolutionDiagnostic::error(
+                                        "E0107",
+                                        &self.file.name,
+                                        &t_path,
+                                        format!(
+                                            "'{value}' is not a value of '{}'",
+                                            self.res.qname(id)
+                                        ),
+                                        Some(transform.reference_span),
+                                    ));
+                                }
+                            }
+                            Some(id) => {
+                                self.res.diagnostics.push(ResolutionDiagnostic::error(
+                                    "E0106",
+                                    &self.file.name,
+                                    &t_path,
+                                    format!(
+                                        "'{}' is not a serialization format",
+                                        self.res.qname(id)
+                                    ),
+                                    Some(transform.reference_span),
+                                ));
+                            }
+                            None => {
+                                self.res.diagnostics.push(ResolutionDiagnostic::error(
+                                    "E0101",
+                                    &self.file.name,
+                                    &t_path,
+                                    format!("unknown schema or serialization format '{name}'"),
+                                    Some(transform.reference_span),
+                                ));
+                            }
+                        }
+                    } else {
+                        match lookup(self.res, self.ctx, self.index, false, "SerializationFormat") {
+                            Some(id)
+                                if matches!(
+                                    element_at(self.res, id),
+                                    SemanticElement::Enumeration(_)
+                                ) && simple_name(self.res.qname(id))
+                                    == "SerializationFormat" =>
+                            {
+                                if enum_value_names(self.res, id)
+                                    .iter()
+                                    .any(|v| v.as_str() == name)
+                                {
+                                    transform.reference_resolved = Some(
+                                        sigil_model::TransformRefTarget::Format(id.0, name.clone()),
+                                    );
+                                } else {
+                                    self.res.diagnostics.push(ResolutionDiagnostic::error(
+                                        "E0101",
+                                        &self.file.name,
+                                        &t_path,
+                                        format!("unknown schema or serialization format '{name}'"),
+                                        Some(transform.reference_span),
+                                    ));
+                                }
+                            }
+                            Some(id) => {
+                                self.res.diagnostics.push(ResolutionDiagnostic::error(
+                                    "E0106",
+                                    &self.file.name,
+                                    &t_path,
+                                    format!(
+                                        "'{}' is not a serialization format",
+                                        self.res.qname(id)
+                                    ),
+                                    Some(transform.reference_span),
+                                ));
+                            }
+                            None => {
+                                self.res.diagnostics.push(ResolutionDiagnostic::error(
+                                    "E0101",
+                                    &self.file.name,
+                                    &t_path,
+                                    format!("unknown schema or serialization format '{name}'"),
+                                    Some(transform.reference_span),
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// `schema Name Format`: the format must be a value of the in-scope
+    /// `SerializationFormat` enumeration — the builtin, or a user-defined
+    /// enum of the same simple name shadowing it (mirroring the
+    /// transform-ref scope). The written format string is kept raw in the
+    /// model; the in-scope enum is linked via `format_resolved`.
+    fn resolve_schema_format(&mut self, path: &str, schema: &mut sigil_model::Schema) {
+        let name = schema.format.clone();
+        let span = schema.format_span;
+        match lookup(self.res, self.ctx, self.index, false, "SerializationFormat") {
+            Some(id)
+                if matches!(element_at(self.res, id), SemanticElement::Enumeration(_))
+                    && simple_name(self.res.qname(id)) == "SerializationFormat" =>
+            {
+                if enum_value_names(self.res, id)
+                    .iter()
+                    .any(|v| v.as_str() == name)
+                {
+                    schema.format_resolved = Some(id.0);
+                } else {
+                    self.res.diagnostics.push(ResolutionDiagnostic::error(
+                        "E0107",
+                        &self.file.name,
+                        path,
+                        format!("'{name}' is not a value of '{}'", self.res.qname(id)),
+                        Some(span),
+                    ));
+                }
+            }
+            Some(id) => {
+                self.res.diagnostics.push(ResolutionDiagnostic::error(
+                    "E0106",
+                    &self.file.name,
+                    path,
+                    format!("'{}' is not a serialization format", self.res.qname(id)),
+                    Some(span),
+                ));
+            }
+            None => {
+                self.res.diagnostics.push(ResolutionDiagnostic::error(
+                    "E0101",
+                    &self.file.name,
+                    path,
+                    "unknown symbol 'SerializationFormat'".to_string(),
+                    Some(span),
+                ));
             }
         }
     }
@@ -1266,6 +1528,369 @@ fn attribute_type(res: &Resolution, id: ElementId, name: &str) -> Option<Option<
     }
 }
 
+/// The builtin `deprecated` annotation (annotations.rosetta): marks a
+/// type, function, enum, type alias or schema as superseded.
+const DEPRECATED_ANNOTATION: &str = "com.rosetta.model.deprecated";
+
+/// The builtin `externalConfig` annotation (annotations.rosetta): marks a
+/// schema as having an externally-configured serialization config.
+const EXTERNAL_CONFIG_ANNOTATION: &str = "com.rosetta.model.externalConfig";
+
+/// Whether one of the element's annotations resolves to the builtin
+/// `deprecated` annotation (matched by qualified name, so a user-defined
+/// lookalike annotation does not trigger it).
+fn is_deprecated(res: &Resolution, annotations: &[sigil_model::AnnotationRef]) -> bool {
+    annotations.iter().any(|a| {
+        a.annotation_resolved
+            .map(|rid| res.qname(ElementId(rid)) == DEPRECATED_ANNOTATION)
+            .unwrap_or(false)
+    })
+}
+
+/// Deprecation warnings (`W0101`): walk every resolved reference after the
+/// full resolution pass and warn when its target carries the builtin
+/// `deprecated` annotation. A post-pass rather than in-flight hooks:
+/// warnings must not depend on element processing order, and same-file
+/// targets only carry their resolved annotations after their file is
+/// written back (the resolution loop works on a per-file clone). Paths
+/// mirror the resolver's model paths. Warnings are appended after all
+/// errors; they never fail resolution.
+fn emit_deprecation_warnings(res: &mut Resolution) {
+    fn target_is_deprecated(res: &Resolution, id: usize) -> bool {
+        match element_at(res, ElementId(id)) {
+            SemanticElement::Data(d) => is_deprecated(res, &d.annotations),
+            SemanticElement::Enumeration(e) => is_deprecated(res, &e.annotations),
+            SemanticElement::TypeAlias(t) => is_deprecated(res, &t.annotations),
+            SemanticElement::Function(f) => is_deprecated(res, &f.annotations),
+            SemanticElement::Schema(s) => is_deprecated(res, &s.annotations),
+            _ => false,
+        }
+    }
+
+    fn warn_resolved(
+        warnings: &mut Vec<ResolutionDiagnostic>,
+        res: &Resolution,
+        file: &str,
+        path: &str,
+        span: Span,
+        id: usize,
+    ) {
+        if target_is_deprecated(res, id) {
+            warnings.push(ResolutionDiagnostic::warning(
+                "W0101",
+                file,
+                path,
+                format!("'{}' is deprecated", res.qname(ElementId(id))),
+                Some(span),
+            ));
+        }
+    }
+
+    fn warn_type_ref(
+        warnings: &mut Vec<ResolutionDiagnostic>,
+        res: &Resolution,
+        file: &str,
+        path: &str,
+        type_ref: &TypeRef,
+    ) {
+        if let Some(id) = type_ref.resolved {
+            warn_resolved(warnings, res, file, path, type_ref.span, id);
+        }
+    }
+
+    fn warn_annotation_refs(
+        warnings: &mut Vec<ResolutionDiagnostic>,
+        res: &Resolution,
+        file: &str,
+        path: &str,
+        annotations: &[sigil_model::AnnotationRef],
+    ) {
+        for annotation in annotations {
+            if let Some(id) = annotation.annotation_resolved {
+                warn_resolved(warnings, res, file, path, annotation.span, id);
+            }
+        }
+    }
+
+    fn warn_named_refs(
+        warnings: &mut Vec<ResolutionDiagnostic>,
+        res: &Resolution,
+        file: &str,
+        path: &str,
+        references: &[sigil_model::NamedRef],
+    ) {
+        for reference in references {
+            if let Some(id) = reference.resolved {
+                warn_resolved(warnings, res, file, path, reference.span, id);
+            }
+        }
+    }
+
+    fn warn_named_ref(
+        warnings: &mut Vec<ResolutionDiagnostic>,
+        res: &Resolution,
+        file: &str,
+        path: &str,
+        reference: &sigil_model::NamedRef,
+    ) {
+        warn_named_refs(warnings, res, file, path, std::slice::from_ref(reference));
+    }
+
+    let mut warnings: Vec<ResolutionDiagnostic> = Vec::new();
+    for file in &res.files {
+        let file_name = file.name.as_str();
+        for element in &file.elements {
+            match element {
+                SemanticElement::Data(d) => {
+                    let path = format!("type {}", d.name);
+                    if let Some(super_type) = &d.super_type {
+                        warn_type_ref(&mut warnings, res, file_name, &path, super_type);
+                    }
+                    warn_annotation_refs(&mut warnings, res, file_name, &path, &d.annotations);
+                    for (idx, attribute) in d.attributes.iter().enumerate() {
+                        let p = format!("{path}.attributes[{idx}]");
+                        warn_type_ref(&mut warnings, res, file_name, &p, &attribute.type_ref);
+                        warn_annotation_refs(
+                            &mut warnings,
+                            res,
+                            file_name,
+                            &p,
+                            &attribute.annotations,
+                        );
+                    }
+                    for condition in &d.conditions {
+                        let p = format!(
+                            "{path}.conditions[{}]",
+                            condition.name.as_deref().unwrap_or("")
+                        );
+                        warn_annotation_refs(
+                            &mut warnings,
+                            res,
+                            file_name,
+                            &p,
+                            &condition.annotations,
+                        );
+                    }
+                }
+                SemanticElement::Enumeration(e) => {
+                    let path = format!("enum {}", e.name);
+                    if let Some(super_type) = &e.super_type {
+                        warn_type_ref(&mut warnings, res, file_name, &path, super_type);
+                    }
+                    warn_annotation_refs(&mut warnings, res, file_name, &path, &e.annotations);
+                }
+                SemanticElement::Annotation(a) => {
+                    let path = format!("annotation {}", a.name);
+                    for (idx, attribute) in a.attributes.iter().enumerate() {
+                        let p = format!("{path}.attributes[{idx}]");
+                        warn_type_ref(&mut warnings, res, file_name, &p, &attribute.type_ref);
+                    }
+                }
+                SemanticElement::TypeAlias(t) => {
+                    let path = format!("typeAlias {}", t.name);
+                    for parameter in &t.parameters {
+                        let p = format!("{path}.parameters[{}]", parameter.name);
+                        warn_type_ref(&mut warnings, res, file_name, &p, &parameter.type_ref);
+                    }
+                    warn_type_ref(&mut warnings, res, file_name, &path, &t.type_ref);
+                    warn_annotation_refs(&mut warnings, res, file_name, &path, &t.annotations);
+                }
+                SemanticElement::BasicType(b) => {
+                    let path = format!("basicType {}", b.name);
+                    for parameter in &b.parameters {
+                        let p = format!("{path}.parameters[{}]", parameter.name);
+                        warn_type_ref(&mut warnings, res, file_name, &p, &parameter.type_ref);
+                    }
+                }
+                SemanticElement::RecordType(r) => {
+                    let path = format!("recordType {}", r.name);
+                    for feature in &r.features {
+                        let p = format!("{path}.features[{}]", feature.name);
+                        warn_type_ref(&mut warnings, res, file_name, &p, &feature.type_ref);
+                    }
+                }
+                SemanticElement::LibraryFunction(f) => {
+                    let path = format!("library function {}", f.name);
+                    for parameter in &f.parameters {
+                        let p = format!("{path}.parameters[{}]", parameter.name);
+                        warn_type_ref(&mut warnings, res, file_name, &p, &parameter.type_ref);
+                    }
+                    warn_type_ref(
+                        &mut warnings,
+                        res,
+                        file_name,
+                        &format!("{path}.returnType"),
+                        &f.return_type,
+                    );
+                }
+                SemanticElement::Function(f) => {
+                    let path = format!("func {}", f.name);
+                    if let Some(super_function) = &f.super_function {
+                        warn_type_ref(&mut warnings, res, file_name, &path, super_function);
+                    }
+                    warn_annotation_refs(&mut warnings, res, file_name, &path, &f.annotations);
+                    for (idx, input) in f.inputs.iter().enumerate() {
+                        let p = format!("{path}.attributes[{idx}]");
+                        warn_type_ref(&mut warnings, res, file_name, &p, &input.type_ref);
+                        warn_annotation_refs(&mut warnings, res, file_name, &p, &input.annotations);
+                    }
+                    if let Some(output) = &f.output {
+                        warn_type_ref(
+                            &mut warnings,
+                            res,
+                            file_name,
+                            &format!("{path}.output"),
+                            &output.type_ref,
+                        );
+                        warn_annotation_refs(
+                            &mut warnings,
+                            res,
+                            file_name,
+                            &format!("{path}.output"),
+                            &output.annotations,
+                        );
+                    }
+                    for condition in &f.conditions {
+                        let p = format!(
+                            "{path}.conditions[{}]",
+                            condition.name.as_deref().unwrap_or("")
+                        );
+                        warn_annotation_refs(
+                            &mut warnings,
+                            res,
+                            file_name,
+                            &p,
+                            &condition.annotations,
+                        );
+                    }
+                    for condition in &f.post_conditions {
+                        let p = format!(
+                            "{path}.postConditions[{}]",
+                            condition.name.as_deref().unwrap_or("")
+                        );
+                        warn_annotation_refs(
+                            &mut warnings,
+                            res,
+                            file_name,
+                            &p,
+                            &condition.annotations,
+                        );
+                    }
+                    for (idx, transform) in f.transform.iter().enumerate() {
+                        if let Some(sigil_model::TransformRefTarget::Schema(id)) =
+                            &transform.reference_resolved
+                        {
+                            warn_resolved(
+                                &mut warnings,
+                                res,
+                                file_name,
+                                &format!("{path}.transform[{idx}]"),
+                                transform.reference_span,
+                                *id,
+                            );
+                        }
+                    }
+                }
+                SemanticElement::Rule(r) => {
+                    if let Some(input) = &r.input {
+                        warn_type_ref(
+                            &mut warnings,
+                            res,
+                            file_name,
+                            &format!("rule {}.input", r.name),
+                            input,
+                        );
+                    }
+                }
+                SemanticElement::Report(report) => {
+                    let path = "report";
+                    let reg = &report.regulatory;
+                    warn_named_ref(
+                        &mut warnings,
+                        res,
+                        file_name,
+                        &format!("{path}.regulatory.body"),
+                        &reg.body,
+                    );
+                    warn_named_refs(
+                        &mut warnings,
+                        res,
+                        file_name,
+                        &format!("{path}.corpora"),
+                        &reg.corpora,
+                    );
+                    for (idx, segment) in reg.segments.iter().enumerate() {
+                        warn_named_ref(
+                            &mut warnings,
+                            res,
+                            file_name,
+                            &format!("{path}.segments[{idx}]"),
+                            &segment.segment,
+                        );
+                    }
+                    warn_type_ref(
+                        &mut warnings,
+                        res,
+                        file_name,
+                        &format!("{path}.inputType"),
+                        &report.input_type,
+                    );
+                    warn_named_refs(
+                        &mut warnings,
+                        res,
+                        file_name,
+                        &format!("{path}.eligibilityRules"),
+                        &report.eligibility_rules,
+                    );
+                    warn_named_ref(
+                        &mut warnings,
+                        res,
+                        file_name,
+                        &format!("{path}.reportType"),
+                        &report.report_type,
+                    );
+                    if let Some(source) = &report.rule_source {
+                        warn_named_ref(
+                            &mut warnings,
+                            res,
+                            file_name,
+                            &format!("{path}.ruleSource"),
+                            source,
+                        );
+                    }
+                }
+                SemanticElement::ExternalRuleSource(source) => {
+                    let path = format!("rule source {}", source.name);
+                    if let Some(super_source) = &source.super_source {
+                        warn_type_ref(&mut warnings, res, file_name, &path, super_source);
+                    }
+                    for (idx, class) in source.classes.iter().enumerate() {
+                        warn_type_ref(
+                            &mut warnings,
+                            res,
+                            file_name,
+                            &format!("{path}.externalClasses[{idx}]"),
+                            &class.data,
+                        );
+                    }
+                }
+                SemanticElement::Schema(s) => {
+                    let path = format!("schema {}", s.name);
+                    warn_annotation_refs(&mut warnings, res, file_name, &path, &s.annotations);
+                }
+                SemanticElement::MetaType(m) => {
+                    let path = format!("metaType {}", m.name);
+                    warn_type_ref(&mut warnings, res, file_name, &path, &m.type_ref);
+                }
+                SemanticElement::Body(_)
+                | SemanticElement::Corpus(_)
+                | SemanticElement::Segment(_) => {}
+            }
+        }
+    }
+    res.diagnostics.extend(warnings);
+}
+
 fn element_flat_index(res: &Resolution, namespace: &str, name: &str) -> Option<usize> {
     let mut count = 0usize;
     for file in &res.files {
@@ -1550,7 +2175,7 @@ fn element_json(element: &SemanticElement, res: &Resolution) -> serde_json::Valu
             "transform": serde_json::Value::Array(
                 f.transform.iter().map(|t| json!({
                     "kind": t.kind.as_str(),
-                    "ref": t.reference.as_ref().map(|r| json!({ "name": r })),
+                    "ref": transform_ref_json(t, res),
                 })).collect(),
             ),
             "dispatch": f.dispatch.as_ref().map(|d| json!({
@@ -1660,6 +2285,27 @@ fn named_ref_json(reference: &sigil_model::NamedRef, res: &Resolution) -> serde_
         Some(id) => json!(res.element_names[id]),
         None => json!(reference.name),
     }
+}
+
+/// A transform annotation's reference renders as the resolved target's
+/// qualified name — the schema element's FQN, or the SerializationFormat
+/// literal as `<enum FQN>.<VALUE>` — falling back to the written name when
+/// unresolved.
+fn transform_ref_json(
+    transform: &sigil_model::TransformAnnotation,
+    res: &Resolution,
+) -> serde_json::Value {
+    let name = match &transform.reference_resolved {
+        Some(sigil_model::TransformRefTarget::Schema(id)) => res.element_names[*id].clone(),
+        Some(sigil_model::TransformRefTarget::Format(enum_id, value)) => {
+            format!("{}.{}", res.qname(ElementId(*enum_id)), value)
+        }
+        None => match &transform.reference {
+            Some(written) => written.clone(),
+            None => return serde_json::Value::Null,
+        },
+    };
+    json!({ "name": name })
 }
 
 /// Canonical JSON rendering of a resolved model: the compatibility artifact

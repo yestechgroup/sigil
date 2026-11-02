@@ -26,7 +26,7 @@ one end-to-end test over real stdio framing.
 | Text sync | `textDocumentSync`: open/close + **INCREMENTAL** (range-based) changes, applied in order, batches supported. |
 | publishDiagnostics | Syntax (`E0001`, `W0001`, ...) and resolution (`E01xx`) diagnostics per open document, re-published after every change. |
 | documentSymbol | Full tree: namespace → elements → attributes / enum values, with exact selection ranges. |
-| definition | On type references (attribute types, `extends`, type-alias/record/library types, configuration roots), annotation references (`[metadata id]`), and declarations themselves. Cross-file, and into the built-in `com.rosetta.model` library (location URI `builtin:<file>`). |
+| definition | On type references (attribute types, `extends`, type-alias/record/library types, configuration roots), annotation references (`[metadata id]`), transform-annotation references (`[ingest Schema]` → the schema; `[projection JSON]` → the in-scope `SerializationFormat` enum), and declarations themselves. Cross-file, and into the built-in `com.rosetta.model` library (location URI `builtin:<file>`). |
 | hover | Markdown: `**kind** \`fqn\`` plus the `<"...">` definition; attributes add the resolved type FQN and cardinality. Hovering a reference shows the target. |
 | completion | Context-aware: type names (incl. builtins) in type-reference positions, annotation attributes inside `[metadata `, annotation names after `[`, `displayName` in enum bodies, element keywords at top level. |
 | references | All sites resolving to the element under the cursor (declaration optional), across the workspace. |
@@ -139,6 +139,7 @@ command = "sigil-lsp"
 - Completion is positional heuristics over line prefixes plus the syntax
   AST — no expression-level awareness (the parser currently skips
   expressions with `W0001`).
-- Only the model subset of the language is resolved; `func`, rules,
-  reports and expressions are recognized-but-skipped constructs (they
-  appear in diagnostics as `W0001`).
+- Only the model subset of the language is *expression*-resolved;
+  `func` (inputs, output, dispatch, extends, transform annotations),
+  rules, and reports are resolved at the model level; expression bodies
+  are recognized-but-not-analyzed.

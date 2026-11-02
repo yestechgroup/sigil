@@ -1,0 +1,16 @@
+namespace test.model.applicability
+
+schema ConfiguredSchema XML <"valid: externalConfig on a schema">
+	[externalConfig]
+
+type MisusedOnType:
+	[externalConfig]
+	x number (1..1)
+
+func MisusedOnFunc:
+	[externalConfig]
+	output:
+		result number (1..1)
+
+	set result:
+		0.0

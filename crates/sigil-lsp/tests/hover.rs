@@ -152,6 +152,73 @@ fn hover_on_enum_value() {
     client.shutdown();
 }
 
+const TRANSFORM: &str = r#"namespace test
+
+schema TradingSchema XML <"A serialization schema">
+
+func IngestTrades: <"ingest from a schema">
+    [ingest TradingSchema]
+    output:
+        result number (1..1)
+
+func DumpTrades:
+    [projection JSON]
+    output:
+        result number (1..1)
+"#;
+
+#[test]
+fn hover_on_transform_schema_reference() {
+    let tmp = TempDir::new("hover-transform");
+    let main = tmp.write("main.rosetta", TRANSFORM);
+    let mut client = TestClient::spawn_utf8(tmp.path());
+    client.open(&main, TRANSFORM, 1);
+    client.sync(&main);
+
+    // `TradingSchema` inside `[ingest TradingSchema]` (line 5) — the
+    // schema's kind, FQN and definition text.
+    let h = hover(&mut client, &main, 5, col(TRANSFORM, 5, "TradingSchema")).expect("hover");
+    assert_eq!(
+        markdown(&h),
+        "**schema** `test.TradingSchema`\n\n---\n\nA serialization schema"
+    );
+    // The hover range covers exactly the reference text.
+    let range = h.range.expect("hover range");
+    assert_eq!(
+        range.start,
+        Position {
+            line: 5,
+            character: col(TRANSFORM, 5, "TradingSchema")
+        }
+    );
+    assert_eq!(
+        range.end,
+        Position {
+            line: 5,
+            character: col(TRANSFORM, 5, "TradingSchema") + "TradingSchema".len() as u32
+        }
+    );
+    client.shutdown();
+}
+
+#[test]
+fn hover_on_transform_format_reference() {
+    let tmp = TempDir::new("hover-format");
+    let main = tmp.write("main.rosetta", TRANSFORM);
+    let mut client = TestClient::spawn_utf8(tmp.path());
+    client.open(&main, TRANSFORM, 1);
+    client.sync(&main);
+
+    // `JSON` inside `[projection JSON]` (line 10) — the target is the
+    // built-in `SerializationFormat` enum.
+    let h = hover(&mut client, &main, 10, col(TRANSFORM, 10, "JSON")).expect("hover");
+    assert_eq!(
+        markdown(&h),
+        "**enum** `com.rosetta.model.SerializationFormat`\n\n---\n\nThe wire format used to (de)serialize the input or output of a transform function (e.g. an ingestion or projection)."
+    );
+    client.shutdown();
+}
+
 #[test]
 fn hover_nowhere_is_none() {
     let tmp = TempDir::new("hover-none");

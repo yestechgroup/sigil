@@ -256,6 +256,83 @@ fn rename_strips_caret_escape_from_keyword_names() {
     client.shutdown();
 }
 
+const TRANSFORM: &str = r#"namespace test
+
+schema TradingSchema XML <"A serialization schema">
+
+func IngestTrades:
+    [ingest TradingSchema]
+    output:
+        result number (1..1)
+
+func ProjectTrades:
+    [projection TradingSchema]
+    output:
+        result number (1..1)
+"#;
+
+const FORMAT: &str = r#"namespace test
+
+func DumpTrades:
+    [projection JSON]
+    output:
+        result number (1..1)
+"#;
+
+#[test]
+fn rename_schema_rewrites_transform_references() {
+    let tmp = TempDir::new("rename-transform");
+    let main = tmp.write("main.rosetta", TRANSFORM);
+    let mut client = TestClient::spawn_utf8(tmp.path());
+    client.open(&main, TRANSFORM, 1);
+    client.sync(&main);
+
+    // From the declaration: the transform reference names in the two func
+    // headers are rewritten alongside the declaration.
+    let edit = client
+        .request::<Rename>(rename_at(&main, 2, 7, "TradeSchema"))
+        .expect("rename returned a WorkspaceEdit");
+    assert_eq!(
+        summary(Some(edit.clone())),
+        vec![
+            (main.clone(), 2, 7, 2, 20, "TradeSchema".to_string()), // declaration
+            (main.clone(), 5, 12, 5, 25, "TradeSchema".to_string()), // [ingest …]
+            (main.clone(), 10, 16, 10, 29, "TradeSchema".to_string()), // [projection …]
+        ],
+        "declaration + 2 transform reference edits"
+    );
+
+    // Same answer starting from a transform reference site.
+    let edit = client.request::<Rename>(rename_at(&main, 5, 12, "TradeSchema"));
+    assert_eq!(
+        summary(edit),
+        vec![
+            (main.clone(), 2, 7, 2, 20, "TradeSchema".to_string()),
+            (main.clone(), 5, 12, 5, 25, "TradeSchema".to_string()),
+            (main.clone(), 10, 16, 10, 29, "TradeSchema".to_string()),
+        ]
+    );
+    client.shutdown();
+}
+
+#[test]
+fn rename_transform_format_target_is_rejected() {
+    let tmp = TempDir::new("rename-format");
+    let main = tmp.write("main.rosetta", FORMAT);
+    let mut client = TestClient::spawn_utf8(tmp.path());
+    client.open(&main, FORMAT, 1);
+    client.sync(&main);
+
+    // `JSON` names a `SerializationFormat` literal, not a named element:
+    // there is nothing to rename.
+    const REQUEST_FAILED: i32 = -32803;
+    let resp = client.request_raw::<Rename>(rename_at(&main, 3, 16, "Text"));
+    let err = resp.response_result.expect_err("format target → error");
+    assert_eq!(err.code, REQUEST_FAILED);
+    assert!(err.message.contains("format"), "{}", err.message);
+    client.shutdown();
+}
+
 #[test]
 fn rename_rejects_invalid_names() {
     let tmp = TempDir::new("rename-invalid");

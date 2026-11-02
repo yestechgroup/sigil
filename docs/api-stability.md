@@ -91,17 +91,29 @@ Shape rules an embedder can rely on:
 - Resolved references render as **fully-qualified name strings**
   (`"resolved": "com.rosetta.model.number"`); unresolved references render
   `"resolved": null`.
+- Transform annotations (`Function.transform`, entries
+  `{"kind": ..., "ref": ...}`) follow the same convention: `"ref"` is
+  `null` for `[enrich]`, otherwise `{"name": ...}` carrying the resolved
+  target's FQN — the schema element's FQN, or a `SerializationFormat`
+  literal as `<enum FQN>.<VALUE>` — falling back to the written name when
+  unresolved (schema refs under `sigil-model/1` initially rendered the
+  written name unconditionally; the resolved-FQN fallback landed together
+  with transform-ref resolution).
 - Cardinalities render as constraint strings (`"(1..1)"`, `"(0..*)"`, as
   produced by `Cardinality::to_constraint_string`).
 - `files` **includes the two builtin library files** (namespace
   `com.rosetta.model`); filter them out by namespace if you only want user
   models — `scripts/oracle_compare.py` does exactly this in `normalize()`.
-- Diagnostics carry `severity`, `code` (`E0001`/`E01xx`/`W0001`, see
-  [compatibility.md](compatibility.md)), `message`, `file`, `path`, and a
-  `span` with 1-based `line`/`column` pairs plus a `file:line:col`
+- `Schema.format` stays the **raw written string**; the in-scope enum is
+  linked internally (`Schema.format_resolved`, skip-serialized, never in
+  JSON).
+- Diagnostics carry `severity`, `code` (`E0001`/`E01xx`/`W0001`/`W0101`,
+  see [compatibility.md](compatibility.md)), `message`, `file`, `path`, and
+  a `span` with 1-based `line`/`column` pairs plus a `file:line:col`
   `location`. Columns count plain characters (Unicode scalar values) —
   **not** LSP UTF-16 code units and not bytes. `"span": null` when no span
-  or no source text is available.
+  or no source text is available. `W0101` deprecation warnings are
+  appended after all errors and never fail resolution.
 
 The `sigil-model/1` format constant is the version marker: a change that
 breaks the shape a consumer parses must bump it.

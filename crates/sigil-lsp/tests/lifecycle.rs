@@ -69,6 +69,35 @@ fn syntax_and_resolution_diagnostics() {
 }
 
 #[test]
+fn deprecation_warnings_publish_with_warning_severity() {
+    let tmp = TempDir::new("warnings");
+    let mut client = TestClient::spawn_utf8(tmp.path());
+
+    // A reference to a [deprecated] type resolves cleanly but publishes a
+    // warning-severity diagnostic (not error: the file must not look broken).
+    let u = tmp.write(
+        "main.rosetta",
+        "namespace test\n\ntype Old:\n    [deprecated]\n    x number (1..1)\n\ntype Holder:\n    old Old (0..1)\n",
+    );
+    client.open(
+        &u,
+        "namespace test\n\ntype Old:\n    [deprecated]\n    x number (1..1)\n\ntype Holder:\n    old Old (0..1)\n",
+        1,
+    );
+    let diags = client.expect_diagnostics(&u, 1);
+    let warning = diags
+        .iter()
+        .find(|d| common::code_of(d) == Some("W0101"))
+        .expect("expected a W0101 deprecation warning, got {diags:?}");
+    assert_eq!(
+        warning.severity,
+        Some(lsp_types::DiagnosticSeverity::WARNING),
+        "deprecation must publish as warning severity, got {warning:?}"
+    );
+    client.shutdown();
+}
+
+#[test]
 fn clean_files_produce_no_diagnostics() {
     let tmp = TempDir::new("clean");
     let mut client = TestClient::spawn_utf8(tmp.path());

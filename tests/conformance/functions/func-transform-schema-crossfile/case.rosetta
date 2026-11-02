@@ -1,0 +1,13 @@
+namespace test.crossfile.app
+
+import test.crossfile.formats.FixmlSchema
+
+func IngestExternal:
+	[ingest FixmlSchema]
+	inputs:
+		x number (1..1)
+	output:
+		result number (1..1)
+
+	set result:
+		x

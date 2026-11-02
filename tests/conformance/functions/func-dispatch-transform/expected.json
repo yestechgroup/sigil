@@ -421,6 +421,13 @@
               "display": null,
               "docReferences": [],
               "name": "CSV_LABELLED"
+            },
+            {
+              "annotations": [],
+              "definition": "FIX (Financial Information eXchange) tag=value messages, configured by an associated FIX configuration file that names the FIX data dictionary and maps each Rune type onto a FIX MsgType. Attributes are mapped to FIX fields through their labels.",
+              "display": null,
+              "docReferences": [],
+              "name": "FIX"
             }
           ]
         }
@@ -745,7 +752,7 @@
             {
               "kind": "ingest",
               "ref": {
-                "name": "TradingSchema"
+                "name": "test.functions.transform.TradingSchema"
               }
             }
           ]
@@ -839,7 +846,7 @@
             {
               "kind": "projection",
               "ref": {
-                "name": "FIXML"
+                "name": "test.functions.format.SerializationFormat.FIXML"
               }
             }
           ]

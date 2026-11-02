@@ -30,6 +30,18 @@ type Trade: <"A trade">
     buyer Party (1..1)
     currency Currency (1..1)
     amount number (1..1)
+
+schema TradeSchema XML <"A schema">
+
+func Load:
+    [ingest TradeSchema]
+    output:
+        result number (1..1)
+
+func Dump:
+    [projection JSON]
+    output:
+        result number (1..1)
 "#;
 
 /// The legend as flat name lists, for decoding token indices.
@@ -205,6 +217,25 @@ fn semantic_tokens_full_golden() {
             (19, 11, 6, "type".into(), no_mods.clone()), // number (builtin)
             (19, 19, 1, "number".into(), no_mods.clone()),
             (19, 22, 1, "number".into(), no_mods.clone()),
+            (21, 0, 6, "keyword".into(), no_mods.clone()), // schema
+            (21, 7, 11, "type".into(), decl.clone()),      // TradeSchema (decl)
+            (21, 24, 10, "string".into(), no_mods.clone()), // "A schema"
+            (23, 0, 4, "keyword".into(), no_mods.clone()), // func
+            (23, 5, 4, "function".into(), decl.clone()),   // Load (decl)
+            (24, 12, 11, "type".into(), no_mods.clone()),  // TradeSchema ([ingest …])
+            (25, 4, 6, "keyword".into(), no_mods.clone()), // output
+            (26, 8, 6, "property".into(), decl.clone()),   // result
+            (26, 15, 6, "type".into(), no_mods.clone()),   // number
+            (26, 23, 1, "number".into(), no_mods.clone()),
+            (26, 26, 1, "number".into(), no_mods.clone()),
+            (28, 0, 4, "keyword".into(), no_mods.clone()), // func
+            (28, 5, 4, "function".into(), decl.clone()),   // Dump (decl)
+            (29, 16, 4, "enum".into(), no_mods.clone()),   // JSON ([projection …] → enum)
+            (30, 4, 6, "keyword".into(), no_mods.clone()), // output
+            (31, 8, 6, "property".into(), decl.clone()),   // result
+            (31, 15, 6, "type".into(), no_mods.clone()),   // number
+            (31, 23, 1, "number".into(), no_mods.clone()),
+            (31, 26, 1, "number".into(), no_mods.clone()),
         ],
         "unexpected semantic token stream"
     );
